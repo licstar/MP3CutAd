@@ -327,6 +327,7 @@ namespace MP3CutAd {
                 for (; p1 + prev >= 0 && p2 + prev >= 0; prev -= step) {
                     double s = LSH.sim(fft1, fft2, p1 + prev, p2 + prev, size2);
                     if (s < threshold) {
+                        prev += size2 - 1;
                         break;
                     }
                     ss.Add(s);
