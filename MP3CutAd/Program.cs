@@ -10,9 +10,19 @@ using TgTransform;
 
 namespace MP3CutAd {
 
-    class Program {
-        static int fft_len = 128;
+    class TimeLogger {
+        private DateTime last;
+        public TimeLogger() {
+            last = DateTime.Now;
+        }
+        public void Log(TextWriter sw, string format) {
+            sw.Write(format, (DateTime.Now - last).TotalSeconds);
+            last = DateTime.Now;
+        }
+    }
 
+    class Program {
+        //static int fft_len = 128;
 
         static void Main(string[] args) {
             var mp3Dir = args[0];
@@ -25,101 +35,165 @@ namespace MP3CutAd {
             List<string> mp3FileList = new List<string>();
             List<string> outFileList = new List<string>();
 
-            //1. 转wav
-            Console.WriteLine("开始转wav {0}", DateTime.Now);
 
+            List<double[,]> ffts = new List<double[,]>();
+            List<List<int>> hashs = new List<List<int>>();
+            var ranges = new List<List<RangeType>>();
+
+            int size = 20;
+            LSH.init(size, MyFFT.len / 2);
             foreach (var f in new DirectoryInfo(mp3Dir).GetFiles()) {
-                if (f.Extension.ToLower() == ".mp3") {
-                    var outfile = tmpDir + f.Name + ".wav";
-                    if (!File.Exists(outfile))
-                        FFMpeg.Mp3toWav(f.FullName, outfile);
-                    fileList.Add(outfile);
-                    mp3FileList.Add(f.FullName);
-                    outFileList.Add(outDir + "\\" + f.Name);
+                if (f.Extension.ToLower() != ".mp3")
+                    continue;
+
+                Console.Write("{0}", f.Name);
+
+                var wavFile = tmpDir + f.Name + ".wav";
+                var fftFile = wavFile + ".fft";
+
+                TimeLogger log = new TimeLogger();
+                //DateTime last = DateTime.Now;
+
+                ///
+                /// 1. 转wav
+                /// 
+                if (!File.Exists(wavFile) && !File.Exists(fftFile)) //wav只是为了生成fft，如果fft已经有了，就不用wav了
+                    FFMpeg.Mp3toWav(f.FullName, wavFile);
+                fileList.Add(wavFile);
+                mp3FileList.Add(f.FullName);
+                outFileList.Add(outDir + "\\" + f.Name);
+
+                log.Log(Console.Out, "\t{0:F1}");
+
+                /// 
+                /// 2. fft
+                /// 
+                if (!File.Exists(fftFile)) {
+                    var a = MyFFT.ProcessWavArr(wavFile);
+                    WriteArrayToFile(a, fftFile);
+                    ffts.Add(a);
+                    File.Delete(wavFile); //生成fft之后就可以删除wav了
+                } else {
+                    ffts.Add(ReadArrayFromFile(fftFile));
                 }
+
+                log.Log(Console.Out, "\t{0:F1}");
+
+
+                /// 
+                /// 3. hash
+                /// 
+                var hashFile = wavFile + ".hash";
+                List<int> hash = new List<int>();
+                if (!File.Exists(hashFile)) {
+                    var a = ffts.Last();
+                    using (StreamWriter sw = new StreamWriter(hashFile)) {
+                        for (int i = 0; i + size < a.GetLength(0); i++) {
+                            int h = LSH.hash(a, i);
+                            sw.WriteLine(h);
+                            hash.Add(h);
+                        }
+                    }
+                } else {
+                    using (StreamReader sr = new StreamReader(hashFile)) {
+                        while (!sr.EndOfStream) {
+                            hash.Add(int.Parse(sr.ReadLine()));
+                        }
+                    }
+                }
+                hashs.Add(hash);
+
+                log.Log(Console.Out, "\t{0:F1}");
+
+                ranges.Add(new List<RangeType>());
+
+                for (int i = 0; i < fileList.Count - 1; i++) {
+                    int j = fileList.Count - 1;
+                    var ranges_i = new List<RangeType>();
+                    var ranges_j = new List<RangeType>();
+                    var lst = CheckSame(ffts[i], ffts[j], hashs[i], hashs[j], size);
+                    FineTune(ffts[i], ffts[j], hashs[i], hashs[j], ranges_i, ranges_j, size, lst);
+
+                    //TODO 加上反向的看看效果会不会有变化
+
+                    ranges_i = CompresssRange(ranges_i);
+                    ranges_j = CompresssRange(ranges_j);
+                    ranges[i] = CombineToRanges(ranges[i], ranges_i);
+                    ranges[j] = CombineToRanges(ranges[j], ranges_j);
+                }
+                //for (int j = 0; j < fileList.Count; j++) {
+                //    ranges[j] = CompresssRange(ranges[j]);
+                //}
+
+                //存储广告位置
+                for (int i = 0; i < fileList.Count; i++) {
+                    using (StreamWriter sw = new StreamWriter(fileList[i] + ".range")) {
+                        //sw.WriteLine(ranges[i].Count);
+                        foreach (var r in ranges[i]) {
+                            sw.WriteLine("{0} {1} {2}", r.begin, r.end, r.count);
+                        }
+                    }
+                }
+
+                log.Log(Console.Out, "\t{0:F1}\n");
+
             }
 
             //2. fft+hash
-            Console.WriteLine("开始fft+hash {0}", DateTime.Now);
-            int size = 50;
-            LSH.init(size, fft_len / 4);
+            //Console.WriteLine("开始fft+hash {0}", DateTime.Now);
+            //
+            //
 
-            foreach (var s in fileList) {
-                var fft_file = s + ".fft";
-                var hash_file = s + ".hash";
-                if (File.Exists(fft_file))
-                    continue;
+            //var a1 = MyFFT.ProcessWavArr(fileList[0]);
+            //var a2 = MyFFT.ProcessWavArr(fileList[1]);
+            //using (StreamWriter sw = new StreamWriter(tmpDir + "1.txt")) {
+            //    sw.WriteLine("00\t1\t{0}", LSH.hash(a2, 14400));
+            //    for (int i = 0; i + size < a1.GetLength(0); i++) {
+            //        sw.WriteLine("{0}\t{1}\t{2}", i, LSH.sim(a1, a2, i, 14400, size), LSH.hash(a1, i));
+            //    }
+            //}
 
-                Console.WriteLine("{0} {1}", s, DateTime.Now);
-                var a = MyFFT.ProcessWavArr(s);
-                WriteArrayToFile(a, fft_file);
-
-                if (File.Exists(hash_file))
-                    continue;
-                using (StreamWriter sw = new StreamWriter(hash_file)) {
-                    for (int i = 0; i + size < a.GetLength(0); i++) {
-                        int h = LSH.hash(a, i);
-                        sw.WriteLine(h);
-                    }
-                }
-            }
-
+            //return;
 
 
 
             //读取临时文件
-            List<double[,]> ffts = new List<double[,]>();
-            List<List<int>> hashs = new List<List<int>>();
-            List<List<KeyValuePair<int, int>>> ranges = new List<List<KeyValuePair<int, int>>>();
-            foreach (var s in fileList) {
-                var fft_file = s + ".fft";
-                var hash_file = s + ".hash";
-                ffts.Add(ReadArrayFromFile(fft_file));
 
-                List<int> hash = new List<int>();
-                using (StreamReader sr = new StreamReader(hash_file)) {
-                    while (!sr.EndOfStream) {
-                        hash.Add(int.Parse(sr.ReadLine()));
-                    }
-                }
-                hashs.Add(hash);
-                ranges.Add(new List<KeyValuePair<int, int>>());
-            }
 
             //3. 识别ads
-            for (int i = 0; i < fileList.Count; i++) {
-                for (int j = 0; j < fileList.Count; j++) {
-                    if (i == j) continue;
-                    var lst = CheckSame(ffts[i], ffts[j], hashs[i], hashs[j], size);
-                    FineTune(ffts[i], ffts[j], hashs[i], hashs[j], ranges[i], ranges[j], size, lst);
-                    Console.WriteLine("{0} {1} {2}", i, j, DateTime.Now);
-                }
-            }
+            //for (int i = 0; i < fileList.Count; i++) {
+            //    for (int j = 0; j < fileList.Count; j++) {
+            //        if (i == j) continue;
+            //        var lst = CheckSame(ffts[i], ffts[j], hashs[i], hashs[j], size);
+            //        FineTune(ffts[i], ffts[j], hashs[i], hashs[j], ranges[i], ranges[j], size, lst);
+            //        Console.WriteLine("{0} {1} {2}", i, j, DateTime.Now);
+            //    }
+            //}
 
-            for (int j = 0; j < fileList.Count; j++) {
-                ranges[j] = CompresssRange(ranges[j]);
-            }
+            //for (int j = 0; j < fileList.Count; j++) {
+            //    ranges[j] = CompresssRange(ranges[j]);
+            //}
 
-            //存储广告位置
-            for (int i = 0; i < fileList.Count; i++) {
-                using (StreamWriter sw = new StreamWriter(fileList[i] + ".range")) {
-                    //sw.WriteLine(ranges[i].Count);
-                    foreach (var r in ranges[i]) {
-                        sw.WriteLine("{0} {1}", r.Key, r.Value);
-                    }
-                }
-            }
+            ////存储广告位置
+            //for (int i = 0; i < fileList.Count; i++) {
+            //    using (StreamWriter sw = new StreamWriter(fileList[i] + ".range")) {
+            //        //sw.WriteLine(ranges[i].Count);
+            //        foreach (var r in ranges[i]) {
+            //            sw.WriteLine("{0} {1}", r.begin, r.end);
+            //        }
+            //    }
+            //}
 
 
             //读取广告位置，并且报告出现次数
             for (int i = 0; i < fileList.Count; i++) {
                 var range_file = fileList[i] + ".range";
                 using (StreamReader sr = new StreamReader(range_file)) {
-                    var range = new List<KeyValuePair<int, int>>();
+                    var range = new List<RangeType>();
                     while (!sr.EndOfStream) {
                         var x = sr.ReadLine().Split(' ');
-                        if (x.Length != 2) continue;
-                        range.Add(new KeyValuePair<int, int>(int.Parse(x[0]), int.Parse(x[1])));
+                        if (x.Length != 3) continue;
+                        range.Add(new RangeType(int.Parse(x[0]), int.Parse(x[1]), int.Parse(x[2])));
                     }
                     ranges[i] = ReverseRange(range, ffts[i].GetLength(0));
                 }
@@ -135,32 +209,59 @@ namespace MP3CutAd {
 
         }
 
-        private static List<KeyValuePair<int, int>> ReverseRange(List<KeyValuePair<int, int>> range, int len) {
-            var ret = new List<KeyValuePair<int, int>>();
-            range.Sort((a, b) => a.Key.CompareTo(b.Key));
+        class RangeType {
+            public int begin;
+            public int end;
+            public int count;
+
+            public RangeType(int begin, int end, int count) {
+                this.begin = begin;
+                this.end = end;
+                this.count = count;
+            }
+
+            public RangeType(int begin, int end) {
+                this.begin = begin;
+                this.end = end;
+                this.count = 1;
+            }
+        }
+
+        private static List<RangeType> CombineToRanges(List<RangeType> range, List<RangeType> add) {
+            for (int i = 0; i < add.Count; i++) {
+                add[i].count = 1;
+            }
+            range.AddRange(add);
+            return CompresssRange(range);
+        }
+
+        private static List<RangeType> ReverseRange(List<RangeType> range, int len) {
+            var ret = new List<RangeType>();
+            range = range.FindAll(x => x.count > 1);
+            range.Sort((a, b) => a.begin.CompareTo(b.begin));
             if (range.Count != 0) {
-                if (range[0].Key != 0) {
-                    ret.Add(new KeyValuePair<int, int>(0, range[0].Key));
+                if (range[0].begin != 0) {
+                    ret.Add(new RangeType(0, range[0].begin));
                 }
                 for (int i = 1; i < range.Count; i++) {
-                    ret.Add(new KeyValuePair<int, int>(range[i - 1].Value, range[i].Key));
+                    ret.Add(new RangeType(range[i - 1].end, range[i].begin));
                 }
-                if (range.Last().Value != len) {
-                    ret.Add(new KeyValuePair<int, int>(range.Last().Value, len));
+                if (range.Last().end != len) {
+                    ret.Add(new RangeType(range.Last().end, len));
                 }
             } else {
-                ret.Add(new KeyValuePair<int, int>(0, len));
+                ret.Add(new RangeType(0, len));
             }
 
             int sum = 0;
             foreach (var o in range) {
-                sum += o.Value - o.Key;
+                sum += o.end - o.begin;
             }
             Console.WriteLine("{0}\t{1}\t{2}", range.Count, sum, len);
             return ret;
         }
 
-        private static void CutAndCombine(string mp3, string output, string wav, List<KeyValuePair<int, int>> range) {
+        private static void CutAndCombine(string mp3, string output, string wav, List<RangeType> range) {
 
             string listFile = wav + ".list";
 
@@ -168,7 +269,7 @@ namespace MP3CutAd {
                 for (int i = 0; i < range.Count; i++) {
                     var r = range[i];
                     var file = wav + i + ".mp3";
-                    FFMpeg.Split(mp3, file, r.Key / 10.0, r.Value / 10.0);
+                    FFMpeg.Split(mp3, file, r.begin / 10.0, r.end / 10.0);
                     sw.WriteLine("file '{0}'", file);
                 }
             }
@@ -179,7 +280,7 @@ namespace MP3CutAd {
         //输入候选，输出时间区间
         private static void FineTune(double[,] fft1, double[,] fft2,
              List<int> hash1, List<int> hash2,
-             List<KeyValuePair<int, int>> range1, List<KeyValuePair<int, int>> range2,
+             List<RangeType> range1, List<RangeType> range2,
             int size, List<KeyValuePair<int, int>> sames) {
 
             int len1 = fft1.GetLength(0);
@@ -189,14 +290,15 @@ namespace MP3CutAd {
                 int p1 = same.Key;
                 int p2 = same.Value;
 
-                //if (InRange(range1, p1) && InRange(range2, p2)) { //两个区域都已经识别过
-                //                                                  //    continue;
-                //}
+                if (InRange(range1, p1) && InRange(range2, p2)) { //两个区域都已经识别过
+                                                                  // Console.WriteLine(".");
+                    continue;
+                }
 
                 //错位选择最佳位置
                 double best = 0;
                 int bp = 0;
-                for (int i = Math.Max(0, p1 - 10); i < Math.Min(p1 + 10, len1 - size); i++) {
+                for (int i = Math.Max(0, p1 - 5); i < Math.Min(p1 + 5, len1 - size); i++) {
                     double s = LSH.sim(fft1, fft2, i, p2, size);
                     if (s > best) {
                         best = s;
@@ -205,142 +307,68 @@ namespace MP3CutAd {
                 }
                 p1 = bp;
 
-                //二分的版本
-                double threshold = 0.88;
-                //int next = size;
-                //int prev = -size;
-                //for (; p1 + next + size < len1 && p2 + next + size < len2; next += size) {
-                //    //记得处理结尾的情况
-                //    double s = LSH.sim(fft1, fft2, p1 + next, p2 + next, size);
-                //    if (s < threshold) {
-                //        next = BinarySearch(fft1, fft2, p1, p2, next - size, next, size, threshold, true);
-                //        break;
-                //    }
-                //}
-
-                //for (; p1 + prev >= 0 && p2 + prev >= 0; prev -= size) {
-                //    //记得处理结尾的情况
-                //    double s = LSH.sim(fft1, fft2, p1 + prev, p2 + prev, size);
-                //    if (s < threshold) {
-                //        prev = BinarySearch(fft1, fft2, p1, p2, prev, prev + size, size, threshold, false);
-                //        break;
-                //    }
-                //}
-
                 int step = 2;//切割精度
                 int next = 0;
                 int prev = 0;
-                int size2 = size;
+                int size2 = step * 2;
+
+                // double change = 1.08; //改变量大于这个，就认为是不同的
+                double threshold = 0.82;// LSH.sim(fft1, fft2, p1, p2, size2) / change - 0.01;
+
                 List<double> ss = new List<double>();
                 for (; p1 + next + size2 < len1 && p2 + next + size2 < len2; next += step) {
                     double s = LSH.sim(fft1, fft2, p1 + next, p2 + next, size2);
-                    ss.Add(s);
                     if (s < threshold) {
-                        // double sum2 = ss.Sum();
-                        double sum = 0;
-                        int cnt = 0;
-                        bool ok = false;
-                        for (int i = 0; i + 1 < ss.Count; i++) {
-                            sum += ss[i];
-                            cnt++;
-                            double v = (sum / cnt) / ss[i + 1];
-                            if (v > 1.02) {
-                                next = i * step;
-                                ok = true;
-                                break;
-                            }
-                        }
-                        if (!ok) {
-                            Console.WriteLine(s); //TODO 这里可能需要适当处理
-                        }
                         break;
                     }
+                    ss.Add(s);
                 }
 
-                ss.Clear();
                 for (; p1 + prev >= 0 && p2 + prev >= 0; prev -= step) {
                     double s = LSH.sim(fft1, fft2, p1 + prev, p2 + prev, size2);
-                    ss.Add(s);
                     if (s < threshold) {
-                        // double sum2 = ss.Sum();
-                        double sum = 0;
-                        int cnt = 0;
-                        bool ok = false;
-                        for (int i = 0; i + 1 < ss.Count; i++) {
-                            sum += ss[i];
-                            cnt++;
-                            double v = (sum / cnt) / ss[i + 1];
-                            if (v > 1.02) {
-                                prev = -i * step;
-                                ok = true;
-                                break;
-                            }
-                        }
-                        if (!ok) {
-                            Console.WriteLine(s);
-                        }
                         break;
                     }
+                    ss.Add(s);
                 }
 
-                // range1.Add(new KeyValuePair<int, int>(p1 + prev + size, p1 + next - size));
-                //range2.Add(new KeyValuePair<int, int>(p2 + prev + size, p2 + next - size));
-                CreateRange(range1, len1, p1 + prev, p1 + next);
-                CreateRange(range2, len2, p2 + prev, p2 + next);
+                //if (ss.Count > 0)
+                //    Console.WriteLine("{0} {1} {2} {3}", p1 + prev, p1 + next, next - prev, ss.Average());
+                CreateRange(range1, len1, new RangeType(p1 + prev, p1 + next));
+                CreateRange(range2, len2, new RangeType(p2 + prev, p2 + next));
             }
         }
 
-        private static void CreateRange(List<KeyValuePair<int, int>> range, int len, int begin, int end) {
-            if (begin <= 50) begin = 0;
-            if (end >= len - 50) end = len;
-            if (begin >= end) return;
+        private static void CreateRange(List<RangeType> range, int len, RangeType add) {
+            if (add.begin <= 50) add.begin = 0;
+            if (add.end >= len - 50) add.end = len;
+            if (add.begin >= add.end - 20) return; //至少要两秒
 
             bool cross = false;
             for (int i = 0; i < range.Count; i++) {
                 var r = range[i];
-                if (r.Key >= end || r.Value <= begin) //不相交
+                if (r.begin > add.end || r.end < add.begin) //不相交
                     continue;
                 cross = true;
-                var r2 = new KeyValuePair<int, int>(Math.Min(r.Key, begin), Math.Max(r.Value, end));
+                var r2 = new RangeType(Math.Min(r.begin, add.begin), Math.Max(r.end, add.end), add.count + r.count);
                 range[i] = r2;
             }
             if (!cross) {
-                range.Add(new KeyValuePair<int, int>(begin, end));
+                range.Add(add);
             }
         }
 
-        private static List<KeyValuePair<int, int>> CompresssRange(List<KeyValuePair<int, int>> range) {
-            List<KeyValuePair<int, int>> ret = new List<KeyValuePair<int, int>>();
+        private static List<RangeType> CompresssRange(List<RangeType> range) {
+            var ret = new List<RangeType>();
             foreach (var r in range) {
-                CreateRange(ret, int.MaxValue, r.Key, r.Value);
+                CreateRange(ret, int.MaxValue, r);
             }
             return ret;
         }
 
-        private static int BinarySearch(double[,] fft1, double[,] fft2, int p1, int p2,
-            int begin, int end, int size, double threshold, bool next) {
-            for (int i = 0; i < 5; i++) {
-                int mid = (begin + end) / 2;
-                double s = LSH.sim(fft1, fft2, p1 + mid, p2 + mid, size);
-
-                if (s > threshold) {
-                    if (next)
-                        begin = mid;
-                    else
-                        end = mid;
-                } else {
-                    if (next)
-                        end = mid;
-                    else
-                        begin = mid;
-                }
-            }
-            return begin;
-        }
-
-        private static bool InRange(List<KeyValuePair<int, int>> range, int value) {
+        private static bool InRange(List<RangeType> range, int value) {
             foreach (var r in range) {
-                if (value >= r.Key && value < r.Value) {
+                if (value >= r.begin && value < r.end) {
                     return true;
                 }
             }
@@ -372,7 +400,7 @@ namespace MP3CutAd {
                             bp = p;
                         }
                     }
-                    if (best > 0.95)
+                    if (best > 0.85)
                         ret.Add(new KeyValuePair<int, int>(i, bp));
                     //sw.WriteLine("{0}\t{1}\t{2}", i, bp, best);
                 }
@@ -430,7 +458,7 @@ namespace MP3CutAd {
 
         public static void init(int s1, int s2) { //初始化随机向量
             Random r = new Random(1);
-            int n = 24;
+            int n = 12;
             vectors = new List<double[,]>();
             for (int id = 0; id < n; id++) {
                 var vector = new double[s1, s2];
