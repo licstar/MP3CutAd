@@ -9,11 +9,7 @@ using System.Text;
 using TgTransform;
 
 namespace MP3CutAd {
-
-
-
-
-
+    
     class Program {
         static int fft_len = 128;
 
@@ -445,6 +441,7 @@ namespace MP3CutAd {
         private static void CreateRange(List<KeyValuePair<int, int>> range, int len, int begin, int end) {
             if (begin <= 50) begin = 0;
             if (end >= len - 50) end = len;
+            if (begin >= end) return;
 
             bool cross = false;
             for (int i = 0; i < range.Count; i++) {
@@ -625,7 +622,7 @@ namespace MP3CutAd {
         }
 
         public static void Mp3toWav(string mp3, string wav) {
-            run(string.Format("-ac 1 -i \"{0}\" -f wav \"{1}\"", mp3, wav));
+            run(string.Format("-i \"{0}\" -ac 1 -ar 22050 -f wav \"{1}\"", mp3, wav));
         }
 
         public static void Split(string mp3, string output, double from, double to) {
