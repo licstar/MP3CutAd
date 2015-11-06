@@ -4,7 +4,8 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using TgTransform;
+using MathNet.Numerics.IntegralTransforms;
+using System.Numerics;
 
 namespace MP3CutAd {
     class MyFFT {
@@ -14,13 +15,13 @@ namespace MP3CutAd {
 
 
         private static double[] doFFT(double[] a) {
+            
             int dataSize = a.Length;
             var fftData = new Complex[dataSize];
             for (int i = 0; i < dataSize; i++) {
                 fftData[i] = new Complex(a[i], 0);
             }
-            FFT fft = new FFT(dataSize);
-            fft.Forward(fftData);
+            Fourier.Forward(fftData);
 
             double[] ret = new double[dataSize];
             for (int i = 0; i < dataSize; i++) {
@@ -92,34 +93,6 @@ namespace MP3CutAd {
             //}
 
             return bmp;
-        }
-
-
-        public static double[,] ProcessWavArr2(string file) {
-            byte[] data = File.ReadAllBytes(file);
-            List<double> vals = new List<double>();
-            for (int i = 44; i < data.Length; i += 2) {
-                int val = data[i] + data[i + 1] * 256;
-                if (val >= 32768)
-                    val = val - 65536;
-                vals.Add((val / 32768.0));
-            }
-
-            int width = 0;
-            for (int i = 0; i + len < vals.Count; i += step, width++) ;
-
-            double[,] ret = new double[width, len / 4];
-            for (int i = 0, cnt = 0; i + len < vals.Count; i += step, cnt++) {
-                double[] v = new double[len];
-                for (int j = 0; j < len; j++) {
-                    v[j] = vals[i + j];
-                }
-                v = doFFT(v);
-                for (int j = 0; j < len / 4; j++) {
-                    ret[cnt, j] = v[j];
-                }
-            }
-            return ret;
         }
 
         public static double[,] ProcessWavArr(string file) {
