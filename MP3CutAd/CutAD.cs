@@ -1,33 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-//using System.Threading.Tasks;
-//using TgTransform;
+using System.Threading.Tasks;
 
-namespace MP3CutAd.Core {
-
-    class TimeLogger {
-        private DateTime last;
-        public TimeLogger() {
-            last = DateTime.Now;
-        }
-        public void Log(TextWriter sw, string format) {
-            sw.Write(format, (DateTime.Now - last).TotalSeconds);
-            last = DateTime.Now;
-        }
-    }
-
-    class Program {
-        //static int fft_len = 128;
-
-        static void Main(string[] args) {
-            var mp3Dir = args[0];
-            var outDir = args[1];
-            var tmpDir = outDir + "\\tmp\\";
+namespace MP3CutAd {
+    class CutAD {
+        public static List<KeyValuePair<List<Range>, int>> detectAD(string[] mp3Files) {
+            //var mp3Dir = args[0];
+            //var outDir = args[1];
+            var tmpDir = Path.GetTempPath() + "\\mp3cut\\";
 
             Directory.CreateDirectory(tmpDir);
 
@@ -42,7 +25,8 @@ namespace MP3CutAd.Core {
 
             int size = 20;
             LSH.init(size, MyFFT.len / 2);
-            foreach (var f in new DirectoryInfo(mp3Dir).GetFiles()) {
+            foreach (var fn in mp3Files) {
+                var f = new FileInfo(fn);
                 if (f.Extension.ToLower() != ".mp3")
                     continue;
 
@@ -61,7 +45,7 @@ namespace MP3CutAd.Core {
                     FFMpeg.Mp3toWav(f.FullName, wavFile);
                 fileList.Add(wavFile);
                 mp3FileList.Add(f.FullName);
-                outFileList.Add(outDir + "\\" + f.Name);
+                // outFileList.Add(outDir + "\\" + f.Name);
 
                 log.Log(Console.Out, "\t{0:F1}");
 
@@ -138,7 +122,7 @@ namespace MP3CutAd.Core {
                 log.Log(Console.Out, "\t{0:F1}\n");
 
             }
-            
+
             //读取广告位置，并且报告出现次数
             for (int i = 0; i < fileList.Count; i++) {
                 var range_file = fileList[i] + ".range";
@@ -153,17 +137,59 @@ namespace MP3CutAd.Core {
                 }
             }
 
-            //5. 提取、拼接 正文剩下部分
-            for (int i = 0; i < fileList.Count; i++) {
-                CutAndCombine(mp3FileList[i], outFileList[i], fileList[i], ranges[i]);
+            var ret = new List<KeyValuePair<List<Range>, int>>();
+            for(int i = 0; i < ranges.Count; i++) {
+                ret.Add(new KeyValuePair<List<Range>, int>(ranges[i], ffts[i].GetLength(0)));
             }
+            return ret;
+        }
+
+        public static void Cut(Dictionary<string, Range[]> files, string path) {
+
+        }
+
+        // 输入字典为<文件名，被判断为广告的所有区间>
+        // 第二个参数是输出目录
+
+        public static void Play(string filename, Range range) {
+
+        }
+
+        //// 播放一个文件的某个区间
+
+        //public int GetLengthOfFile(string mp3Filename) {
+        //    // 音频长度毫秒数
+        //}
+
+        //// 或者它的批量版本
+        //public int[] GetLengthOfFiles(string[] mp3Files) {
+
+        //}
+
+
+
+
+
+
+
+
+
+
+
+        static void Mainxx(string[] args) {
+
+
+            ////5. 提取、拼接 正文剩下部分
+            //for (int i = 0; i < fileList.Count; i++) {
+            //    CutAndCombine(mp3FileList[i], outFileList[i], fileList[i], ranges[i]);
+            //}
 
 
             //0.1s的精度。22.05khz
 
         }
 
-        
+
 
         private static List<Range> CombineToRanges(List<Range> range, List<Range> add) {
             for (int i = 0; i < add.Count; i++) {
@@ -378,5 +404,4 @@ namespace MP3CutAd.Core {
         }
 
     }
-    
 }
