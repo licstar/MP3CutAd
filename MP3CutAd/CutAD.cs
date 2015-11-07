@@ -15,9 +15,6 @@ namespace MP3CutAd {
             Directory.CreateDirectory(tmpDir);
 
             List<string> fileList = new List<string>();
-            List<string> mp3FileList = new List<string>();
-            List<string> outFileList = new List<string>();
-
 
             List<double[,]> ffts = new List<double[,]>();
             List<List<int>> hashs = new List<List<int>>();
@@ -25,6 +22,9 @@ namespace MP3CutAd {
 
             int size = 20;
             LSH.init(size, MyFFT.len / 2);
+
+            List<Link> links = new List<Link>();
+
             foreach (var fn in mp3Files) {
                 var f = new FileInfo(fn);
                 if (f.Extension.ToLower() != ".mp3")
@@ -44,8 +44,6 @@ namespace MP3CutAd {
                 if (!File.Exists(wavFile) && !File.Exists(fftFile)) //wav只是为了生成fft，如果fft已经有了，就不用wav了
                     FFMpeg.Mp3toWav(f.FullName, wavFile);
                 fileList.Add(wavFile);
-                mp3FileList.Add(f.FullName);
-                // outFileList.Add(outDir + "\\" + f.Name);
 
                 log.Log(Console.Out, "\t{0:F1}");
 
@@ -96,52 +94,68 @@ namespace MP3CutAd {
                     var ranges_i = new List<Range>();
                     var ranges_j = new List<Range>();
                     var lst = CheckSame(ffts[i], ffts[j], hashs[i], hashs[j], size);
-                    FineTune(ffts[i], ffts[j], hashs[i], hashs[j], ranges_i, ranges_j, size, lst);
+                    var tlink = FineTune(ffts[i], ffts[j], hashs[i], hashs[j], ranges_i, ranges_j, size, lst);
 
                     //TODO 加上反向的看看效果会不会有变化
+
+                    //添加等价关系
+                    foreach (var link in tlink) {
+                        links.Add(new Link(i, j, link.Key, link.Value));
+                    }
 
                     ranges_i = CompresssRange(ranges_i);
                     ranges_j = CompresssRange(ranges_j);
                     ranges[i] = CombineToRanges(ranges[i], ranges_i);
                     ranges[j] = CombineToRanges(ranges[j], ranges_j);
                 }
+
+                CalcRangeTypes(ranges, links);
                 //for (int j = 0; j < fileList.Count; j++) {
                 //    ranges[j] = CompresssRange(ranges[j]);
                 //}
 
                 //存储广告位置
-                for (int i = 0; i < fileList.Count; i++) {
-                    using (StreamWriter sw = new StreamWriter(fileList[i] + ".range")) {
-                        //sw.WriteLine(ranges[i].Count);
-                        foreach (var r in ranges[i]) {
-                            sw.WriteLine("{0} {1} {2}", r.begin, r.end, r.count);
-                        }
-                    }
-                }
+                //for (int i = 0; i < fileList.Count; i++) {
+                //    using (StreamWriter sw = new StreamWriter(fileList[i] + ".range")) {
+                //        //sw.WriteLine(ranges[i].Count);
+                //        foreach (var r in ranges[i]) {
+                //            sw.WriteLine("{0} {1} {2}", r.begin, r.end, r.count);
+                //        }
+                //    }
+                //}
 
                 log.Log(Console.Out, "\t{0:F1}\n");
 
             }
 
             //读取广告位置，并且报告出现次数
-            for (int i = 0; i < fileList.Count; i++) {
-                var range_file = fileList[i] + ".range";
-                using (StreamReader sr = new StreamReader(range_file)) {
-                    var range = new List<Range>();
-                    while (!sr.EndOfStream) {
-                        var x = sr.ReadLine().Split(' ');
-                        if (x.Length != 3) continue;
-                        range.Add(new Range(int.Parse(x[0]), int.Parse(x[1]), int.Parse(x[2])));
-                    }
-                    ranges[i] = ReverseRange(range, ffts[i].GetLength(0));
-                }
-            }
+            //for (int i = 0; i < fileList.Count; i++) {
+            //    var range_file = fileList[i] + ".range";
+            //    using (StreamReader sr = new StreamReader(range_file)) {
+            //        var range = new List<Range>();
+            //        while (!sr.EndOfStream) {
+            //            var x = sr.ReadLine().Split(' ');
+            //            if (x.Length != 3) continue;
+            //            range.Add(new Range(int.Parse(x[0]), int.Parse(x[1]), int.Parse(x[2])));
+            //        }
+            //        ranges[i] = ReverseRange(range, ffts[i].GetLength(0));
+            //    }
+            //}
 
             var ret = new List<KeyValuePair<List<Range>, int>>();
-            for(int i = 0; i < ranges.Count; i++) {
+            for (int i = 0; i < ranges.Count; i++) {
                 ret.Add(new KeyValuePair<List<Range>, int>(ranges[i], ffts[i].GetLength(0)));
             }
             return ret;
+        }
+
+        private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
+            List<Link> rangeLinks = new List<Link>();
+            //
+
+            for (int i = 0; i < ranges.Count; i++) {
+
+            }
         }
 
         public static void Cut(Dictionary<string, Range[]> files, string path) {
@@ -242,13 +256,14 @@ namespace MP3CutAd {
         }
 
         //输入候选，输出时间区间
-        private static void FineTune(double[,] fft1, double[,] fft2,
+        private static List<KeyValuePair<int, int>> FineTune(double[,] fft1, double[,] fft2,
              List<int> hash1, List<int> hash2,
              List<Range> range1, List<Range> range2,
             int size, List<KeyValuePair<int, int>> sames) {
 
             int len1 = fft1.GetLength(0);
             int len2 = fft2.GetLength(0);
+            var ret = new List<KeyValuePair<int, int>>();
 
             foreach (var same in sames) {
                 int p1 = same.Key;
@@ -299,9 +314,14 @@ namespace MP3CutAd {
 
                 //if (ss.Count > 0)
                 //    Console.WriteLine("{0} {1} {2} {3}", p1 + prev, p1 + next, next - prev, ss.Average());
-                CreateRange(range1, len1, new Range(p1 + prev, p1 + next));
-                CreateRange(range2, len2, new Range(p2 + prev, p2 + next));
+
+                if (next - prev >= 20) {
+                    CreateRange(range1, len1, new Range(p1 + prev, p1 + next));
+                    CreateRange(range2, len2, new Range(p2 + prev, p2 + next));
+                    ret.Add(new KeyValuePair<int, int>(p1, p2));
+                }
             }
+            return ret;
         }
 
         private static void CreateRange(List<Range> range, int len, Range add) {
