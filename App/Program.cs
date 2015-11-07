@@ -19,6 +19,8 @@ namespace MP3CutAd.App
             Application.SetCompatibleTextRenderingDefault(false);
 
             var settings = new CefSettings();
+            settings.CefCommandLineArgs["javascript-harmony"] = "1";
+
             //Perform dependency check to make sure all relevant resources are in our output directory.
             Cef.Initialize(settings, shutdownOnProcessExit: true, performDependencyCheck: true);
             Application.Run(new MainForm());

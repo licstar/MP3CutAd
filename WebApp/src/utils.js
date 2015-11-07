@@ -1,9 +1,11 @@
-exports.delimeter = navigator.platform.match(/win/i) ? '\\' : '/'
+var _ = exports;
 
-exports.resolveFileName = function(path) {
+_.delimeter = navigator.platform.match(/win/i) ? '\\' : '/'
+
+_.resolveFileName = function(path) {
   var arr = path.split(/[\/\\]/g)
   var filename = arr.pop()
-  var directory = arr.join(exports.delimeter)
+  var directory = arr.join(_.delimeter)
   var dot = filename.indexOf('.')
   var basename = filename
   var extname = ''
@@ -21,7 +23,7 @@ exports.resolveFileName = function(path) {
   }
 }
 
-exports.extend = function(to, from) {
+_.extend = function(to, from) {
   var keys = Object.keys(from)
   var i = keys.length
   while (i--) {
@@ -30,35 +32,35 @@ exports.extend = function(to, from) {
   return to
 }
 
-exports.floor = function(num) {
+_.floor = function(num) {
   return ~~num
 }
 
-exports.rand = function(min, max) {
+_.rand = function(min, max) {
   if (max === undefined) {
     max = min
     min = 0
   }
-  return exports.floor(Math.random() * (max - min)) + min
+  return _.floor(Math.random() * (max - min)) + min
 }
 
-exports.padding = function(str, len, pad = ' ') {
+_.padding = function(str, len, pad = ' ') {
   str = '' + str
   while (str.length < len) str = pad + str
   return str
 }
 
-exports.qsa = function(selector, container = document) {
+_.qsa = function(selector, container = document) {
   return [].slice.call(container.querySelectorAll(selector), 0)
 }
 
-exports.hsv2rgb = function(H, S, V) {
+_.hsv2rgb = function(H, S, V) {
   var R, G, B
   if (S == 0) {
     R = G = B = V
   } else {
     H /= 60
-    var i = exports.floor(H)
+    var i = _.floor(H)
     var f = H - i
     var a = V * (1 - S)
     var b = V * (1 - S * f)
@@ -96,15 +98,35 @@ exports.hsv2rgb = function(H, S, V) {
         break
     }
   }
-  R = exports.floor(R * 255)
-  G = exports.floor(G * 255)
-  B = exports.floor(B * 255)
+  R = _.floor(R * 255)
+  G = _.floor(G * 255)
+  B = _.floor(B * 255)
   return [R, G, B]
 }
 
-exports.rgb2hex = function(R, G, B) {
+_.rgb2hex = function(R, G, B) {
   return '#'
-    + exports.padding(R.toString(16), 2, '0')
-    + exports.padding(G.toString(16), 2, '0')
-    + exports.padding(B.toString(16), 2, '0')
+    + _.padding(R.toString(16), 2, '0')
+    + _.padding(G.toString(16), 2, '0')
+    + _.padding(B.toString(16), 2, '0')
+}
+
+_.formatDuration = function(time, showMs = false) {
+  if (isNaN(time)) {
+    return '--:--'
+  }
+  var ms = time % 1000
+  time = _.floor(time / 1000)
+  var s = time % 60
+  time = _.floor(time / 60)
+  var m = time % 60
+  time = _.floor(time / 60)
+  var h = time
+  var text = ''
+  if (h > 0) text += h + ':'
+  if (!showMs || m > 0) text += (text ? _.padding(m, 2, '0') : m) + ':'
+  text += (text ? _.padding(s, 2, '0') : s)
+  if (showMs) text += ':' + _.padding(ms, 3, '0')
+
+  return text
 }

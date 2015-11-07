@@ -23,3 +23,8 @@
 @o-xl-color: rgba(255, 255, 255, @o-xl);
 @o-xxl-color: rgba(255, 255, 255, @o-xxl);
 @o-xxxl-color: rgba(255, 255, 255, @o-xxxl);
+
+.inner-shadow(@px, @color) {
+  box-shadow: inset -@px -@px @px @color,
+              inset  @px  @px @px @color;
+}

@@ -41,6 +41,10 @@
       &.selected, &.active {
         opacity: 1.0;
       }
+      &.selected, &:hover {
+        .inner-shadow(2px, lighten(@h-color, 20%));
+        //border: 2px solid lighten(@h-color, 20%);
+      }
       &.ignored:not(:hover) {
         //background-color: @o-d-color !important;
         opacity: @o-xxxl;
@@ -106,23 +110,7 @@ var Vue = require('vue')
 var _ = require('../utils')
 
 Vue.filter('musicTime', function(time, showMs = false) {
-  if (isNaN(time)) {
-    return '--:--'
-  }
-  var ms = time % 1000
-  time = _.floor(time / 1000)
-  var s = time % 60
-  time = _.floor(time / 60)
-  var m = time % 60
-  time = _.floor(time / 60)
-  var h = time
-  var text = ''
-  if (h > 0) text += h + ':'
-  if (!showMs || m > 0) text += (text ? _.padding(m, 2, '0') : m) + ':'
-  text += (text ? _.padding(s, 2, '0') : s)
-  if (showMs) text += ':' + _.padding(ms, 3, '0')
-
-  return text
+  return _.formatDuration(time, showMs)
 })
 
 Vue.filter('segmentStyle', function(ad, file, groupCount) {

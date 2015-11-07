@@ -15,6 +15,8 @@ body {
 }
 #header {
   width: 100%;
+  z-index: 500;
+  box-shadow: 0 0 10px #000;
 }
 #body {
   width: 100%;
@@ -153,18 +155,12 @@ module.exports = {
       this.selectedAd = ad
     },
     detectAd() {
+      this.selectAd(null, null)
       this.loading = true
-      var timer = setInterval(() => {
-        var step = 0.1
-        if (this.loadingProgress > 0.6) step = 0.05
-        this.loadingProgress += Math.random() * step
-        if (this.loadingProgress > 0.95) this.loadingProgress = 0.95
-      }, 500)
       this.loadingProgress = 0
       bound.detectAD(JSON.stringify(this.selectedFiles.map(f => f.fullname)),
         (err, result) => {
           this.loading = false
-          clearInterval(timer)
           result = JSON.parse(result)
 
           var groups = [];

@@ -10,8 +10,7 @@
     width: 100%;
     height: 100%;
     background-color: @bg-color;
-    box-shadow: 0  1px 2px @primary-color inset,
-                0 -1px 2px @primary-color inset;
+    .inner-shadow(2px, @primary-color);
 
     .current {
       position: absolute;
