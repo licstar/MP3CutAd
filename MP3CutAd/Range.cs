@@ -69,12 +69,14 @@ namespace MP3CutAd.Core {
 
     partial class CutAD {
 
-        private static void SetRangeType(List<List<Range>> ranges, List<Link>[][] rangeLinks, int i, int j, int typeId) {
+        private static int SetRangeType(List<List<Range>> ranges, List<Link>[][] rangeLinks, int i, int j, int typeId) {
             ranges[i][j].type = typeId;
+            int ret = 1;
             foreach (var link in rangeLinks[i][j]) {
                 if (ranges[link.f2][link.target].type == -1)
-                    SetRangeType(ranges, rangeLinks, link.f2, link.target, typeId);
+                    ret += SetRangeType(ranges, rangeLinks, link.f2, link.target, typeId);
             }
+            return ret;
         }
 
         private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
@@ -94,10 +96,6 @@ namespace MP3CutAd.Core {
                 int i1 = ranges[link.f1].FindIndex(r => r.InRange(link.r1));
                 int i2 = ranges[link.f2].FindIndex(r => r.InRange(link.r2));
 
-                if(i1 == 9 && link.f1 ==0 || i2==9 && link.f2 == 0) {
-                    int aaa = 1;
-                }
-
                 //图中添加边
                 var ri1 = ranges[link.f1][i1];
                 var ri2 = ranges[link.f2][i2];
@@ -110,17 +108,29 @@ namespace MP3CutAd.Core {
             }
 
             int typeId = 0;
+            List<int> counts = new List<int>();
             for (int i = 0; i < ranges.Count; i++) {
                 for (int j = 0; j < ranges[i].Count; j++) {
                     var r = ranges[i][j];
                     if (r.type == -1) {
-                        SetRangeType(ranges, rangeLinks, i, j, typeId);
+                        counts.Add(SetRangeType(ranges, rangeLinks, i, j, typeId));
                         typeId++;
                     }
                 }
             }
 
-            //TODO 可以加入统计一下每个type都有几个区间，如果只有两个的话，考虑直接删掉
+            //可以加入统计一下每个type都有几个区间，如果只有1个的话，直接删掉
+            for (int i = 0; i < ranges.Count; i++) {
+                var good = new List<Range>();
+                for (int j = 0; j < ranges[i].Count; j++) {
+                    var r = ranges[i][j];
+                    if (counts[r.type] > 1) {
+                        r.count = counts[r.type];
+                        good.Add(r);
+                    }
+                }
+                ranges[i] = good;
+            }
         }
 
 
