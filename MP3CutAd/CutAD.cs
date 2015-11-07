@@ -132,9 +132,7 @@ namespace MP3CutAd.Core {
                 }
 
 
-                //for (int j = 0; j < fileList.Count; j++) {
-                //    ranges[j] = CompresssRange(ranges[j]);
-                //}
+                
 
                 //存储广告位置
                 //for (int i = 0; i < fileList.Count; i++) {
@@ -148,6 +146,9 @@ namespace MP3CutAd.Core {
 
                 //log.Log(Console.Out, "\t{0:F1}\n");
 
+            }
+            for (int j = 0; j < ranges.Count; j++) {
+                ranges[j] = CompresssRange(ranges[j]);
             }
             CalcRangeTypes(ranges, links);
             //读取广告位置，并且报告出现次数
