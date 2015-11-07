@@ -108,7 +108,7 @@ namespace MP3CutAd.App {
                     return new {
                         length = length * 100,
                         ads = ranges.Select(r => new {
-                            gid = 0,
+                            type = r.type,
                             start = r.begin * 100,
                             end = r.end * 100,
                         }).ToArray()
@@ -133,7 +133,7 @@ namespace MP3CutAd.App {
                         ads = new[] {
                             new {
                                 ignored = false,
-                                gid = 0,
+                                type = 0,
                                 start = 0,
                                 end = 0,
                             }

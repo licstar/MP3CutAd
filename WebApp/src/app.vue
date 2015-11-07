@@ -100,7 +100,7 @@ body {
           :selected-ad.sync="selectedAd"
           @remove="removeFile"
           @select-ad="selectAd"
-          :group-count="groupCount"></file-list>
+          :type-count="typeCount"></file-list>
       </div>
     </div>
   </div>
@@ -122,13 +122,12 @@ module.exports = {
   data() {
     return {
       selectedFiles: [],
-      groupCount: 0,
+      typeCount: 0,
       selectedFile: null,
       selectedAd: null,
       loading: false,
-      loadingProgress: 0,
       timeUsed: 0,
-      timeLeft: 0
+      timeLeft: -1
     }
   },
   methods: {
@@ -169,27 +168,26 @@ module.exports = {
       this.loading = true
       this.timeUsed = 0
       this.timeLeft = -1
-      this.loadingProgress = 0
       bound.detectAD(JSON.stringify(this.selectedFiles.map(f => f.fullname)),
         (err, result) => {
           this.loading = false
           result = JSON.parse(result)
 
-          var groups = [];
+          var types = [];
           result.forEach((ret, i) => {
             var file = this.selectedFiles[i]
             file.length = ret.length
             var ads = ret.ads
             ads.forEach((ad, j) => {
-              var gid = ad.gid
-              if (groups.indexOf(gid) === -1) {
-                groups.push(gid)
+              var type = ad.type
+              if (types.indexOf(type) === -1) {
+                types.push(type)
               }
               ad.ignored = false
             })
             file.ads = ads
           })
-          this.groupCount = groups.length
+          this.typeCount = types.length
         },
         (used, left) => {
           this.timeUsed = used
@@ -202,7 +200,6 @@ module.exports = {
     cut() {
       this.timeUsed = 0
       this.timeLeft = -1
-      this.loadingProgress = 0
       bound.selectDirectory((err, path) => {
         path = JSON.parse(path)
         if (path) {
@@ -215,7 +212,6 @@ module.exports = {
             (used, left) => {
               this.timeUsed = used
               this.timeLeft = left
-              this.loadingProgress = used / (used + left)
             }
           )
         }
@@ -227,6 +223,10 @@ module.exports = {
     }
   },
   computed: {
+    loadingProgress() {
+      if (this.timeLeft < 0) return 0
+      return this.timeUsed / (this.timeUsed + this.timeLeft)
+    },
     timeToGo() {
       if (this.timeLeft < 0 || this.timeLeft > 10000) return '尚不明朗'
       return _.formatDuration(this.timeLeft * 1000, false)

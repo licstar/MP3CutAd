@@ -34,7 +34,7 @@
       </header>
       <track-viewer
         :file="file"
-        :group-count="groupCount"
+        :type-count="typeCount"
         :selected-ad="selectedAd"
         @ad-mouseover="adMouseover"
         @ad-mouseout="adMouseout"></track-viewer>
@@ -47,7 +47,7 @@
 var TrackViewer = require('./track-viewer.vue')
 
 module.exports = {
-  props: ['files', 'group-count', 'selected-ad'],
+  props: ['files', 'type-count', 'selected-ad'],
   data() {
     return {
       expand: true

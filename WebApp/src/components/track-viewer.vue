@@ -49,31 +49,6 @@
         //background-color: @o-d-color !important;
         opacity: @o-xxxl;
       }
-
-      .control {
-        visibility: hidden;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: @control-size * 2;
-        height: @control-size;
-        margin-top: -@control-size / 2;
-        margin-left: -@control-size;
-        text-align: center;
-        z-index: 100;
-
-        >i {
-          font-size: @control-size;
-          cursor: pointer;
-          color: @l-color;
-          &:hover {
-            color: @d-color;
-          }
-        }
-      }
-      &:hover .control, .control.active {
-        visibility: visible;
-      }
     }
   }
 }
@@ -85,15 +60,11 @@
       <div class="segment"
         v-if="file.ads.length > 0"
         v-for="ad in file.ads"
-        :class="{ active: ad.gid === activeGroup, ignored: ad.ignored, selected: ad === selectedAd }"
-        :style="ad | segmentStyle file groupCount"
+        :class="{ active: ad.type === activeType, ignored: ad.ignored, selected: ad === selectedAd }"
+        :style="ad | segmentStyle file typeCount"
         @mouseover="mouseover(ad)"
         @mouseout="mouseout(ad)"
         @click="select(ad)">
-        <!-- <div class="control">
-          <i class="play fa fa-play" @click="playSegment(ad)"></i>
-          <i class="remove fa" :class="[(ad.ignored ? 'fa-check' : 'fa-times')]" @click="tagAd(ad)"></i>
-        </div> -->
       </div>
     </div>
 
@@ -113,15 +84,15 @@ Vue.filter('musicTime', function(time, showMs = false) {
   return _.formatDuration(time, showMs)
 })
 
-Vue.filter('segmentStyle', function(ad, file, groupCount) {
+Vue.filter('segmentStyle', function(ad, file, typeCount) {
   var style = {
     top: 0,
     bottom: 0
   }
   style.left = (ad.start / file.length) * 100 + '%'
   style.right = (1 - ad.end / file.length) * 100 + '%'
-  if (groupCount > 0) {
-    var h = ad.gid / groupCount * 350 + 10
+  if (typeCount > 0) {
+    var h = ad.type / typeCount * 350 + 10
     var [r, g, b] = _.hsv2rgb(h, 0.8, 0.9)
     var hex = _.rgb2hex(r, g, b)
     style.backgroundColor = hex
@@ -130,10 +101,10 @@ Vue.filter('segmentStyle', function(ad, file, groupCount) {
 })
 
 module.exports = {
-  props: ['file', 'group-count', 'selected-ad'],
+  props: ['file', 'type-count', 'selected-ad'],
   data: () => {
     return {
-      activeGroup: null
+      activeType: null
     }
   },
   methods: {
@@ -149,20 +120,14 @@ module.exports = {
     select(ad) {
       this.$dispatch('select-ad', this.file, ad)
       this.selectedAd = ad 
-    },
-    tagAd(ad) {
-      ad.ignored = !ad.ignored
-    },
-    playSegment(seg) {
-      console.log('playSegment', seg)
     }
   },
   events: {
     'ad-active': function(ad) {
-      this.activeGroup = ad.gid
+      this.activeType = ad.type
     },
     'ad-deactive': function(ad) {
-      this.activeGroup = null
+      this.activeType = null
     }
   }
 }
