@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace MP3CutAd.Core {
     public partial class CutAD {
+
+        const string tmpdirName = "mp3cut";
+
         /// <summary>
         /// 检测一系列MP3文件包含的广告（重复出现的部分）
         /// </summary>
@@ -15,7 +18,7 @@ namespace MP3CutAd.Core {
         /// <returns>对应各个MP3的广告区间</returns>
         public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files, Action<int, int> notify) {
 
-            var tmpDir = Path.Combine(Path.GetTempPath(), "mp3cut");
+            var tmpDir = Path.Combine(Path.GetTempPath(), tmpdirName);
 
             Directory.CreateDirectory(tmpDir);
 
@@ -173,14 +176,36 @@ namespace MP3CutAd.Core {
         }
 
 
-
-        public static void Cut(Dictionary<string, Range[]> files, string path, Action<int, int> notify) {
-            // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
-            //for (int i = 0; i < fileList.Count; i++) {
-            //    CutAndCombine(mp3FileList[i], outFileList[i], fileList[i], ranges[i]);
-            //}
+        public class CutPara {
+            public List<Range> range;
+            public int length;
+            public CutPara(int length, List<Range> range) {
+                this.range = range;
+                this.length = length;
+            }
         }
-        
+
+        public static void Cut(Dictionary<string, CutPara> files, string path, Action<int, int> notify) {
+            var tmpDir = Path.Combine(Path.GetTempPath(), tmpdirName);
+
+            Directory.CreateDirectory(tmpDir);
+
+            DateTime start = DateTime.Now;
+            int calced = 0;
+            foreach (var file in files) {
+                var f = new FileInfo(file.Key);
+
+                Console.Write("{0}", f.Name);
+
+                var wavFile = Path.Combine(tmpDir, f.Name + ".wav");
+                CutAndCombine(f.FullName, Path.Combine(path, f.Name), wavFile, ReverseRange(file.Value.range, file.Value.length));
+
+                calced++;
+                var used = (DateTime.Now - start).TotalSeconds;
+                var left = used / calced * (files.Count - calced);
+                notify((int)used, (int)left);
+            }
+        }
 
         private static void CutAndCombine(string mp3, string output, string wav, List<Range> range) {
 

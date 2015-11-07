@@ -153,10 +153,13 @@ namespace MP3CutAd.App {
 
                 var args = files.ToDictionary(
                     file => file.fullname,
-                    file => file.ads
-                        .Where(ad => !ad.ignored)
-                        .Select(ad => new Range(ad.start / 100, ad.end / 100))
-                        .ToArray()
+                    file => new CutAD.CutPara(
+                         int.Parse(file.length) / 100,
+                         file.ads
+                            .Where(ad => !ad.ignored)
+                            .Select(ad => new Range(ad.start / 100, ad.end / 100))
+                            .ToList()
+                        )
                 );
 
                 var notify = new Action<int, int>((used, left) => {

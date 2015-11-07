@@ -145,7 +145,6 @@ namespace MP3CutAd.Core {
 
         private static List<Range> ReverseRange(List<Range> range, int len) {
             var ret = new List<Range>();
-            range = range.FindAll(x => x.count > 1);
             range.Sort((a, b) => a.begin.CompareTo(b.begin));
             if (range.Count != 0) {
                 if (range[0].begin != 0) {
