@@ -8,7 +8,7 @@ using System.Text;
 //using System.Threading.Tasks;
 //using TgTransform;
 
-namespace MP3CutAd {
+namespace MP3CutAd.Core {
 
     class TimeLogger {
         private DateTime last;
