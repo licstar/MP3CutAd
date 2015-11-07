@@ -41,7 +41,7 @@ namespace MP3CutAd.Core {
 
                 Console.Write("{0}", f.Name);
 
-                var wavFile = tmpDir + f.Name + ".wav";
+                var wavFile = Path.Combine(tmpDir, f.Name + ".wav");
                 var fftFile = wavFile + ".fft";
 
                 log.StartTimer("wav");
