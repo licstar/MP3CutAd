@@ -28,7 +28,8 @@ module.exports = {
   }
 }
 
-if (process.env.NODE_ENV === 'production') {
+//if (process.env.NODE_ENV === 'production') {
+if (process.argv.indexOf('--production') !== -1) {
   module.exports.plugins = [
     new webpack.DefinePlugin({
       'process.env': {
