@@ -93,6 +93,11 @@ module.exports = {
         start: this.ad.start,
         end: this.ad.end
       }, null, '  '))
+      console.log(this.file.fullname, this.ad.start, this.ad.end)
+      var audio = new Audio
+
+      audio.src = 'file:///' + this.file.fullname.replace(/\\/g, '/')
+      audio.play()
     },
     tagAd() {
       this.ad.ignored = !this.ad.ignored

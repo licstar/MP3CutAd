@@ -20,6 +20,8 @@ namespace MP3CutAd.App
 
             var settings = new CefSettings();
             settings.CefCommandLineArgs["javascript-harmony"] = "1";
+            settings.CefCommandLineArgs["allow-file-access-from-files"] = "1";
+            settings.CefCommandLineArgs["disable-web-security"] = "1";
 
             //Perform dependency check to make sure all relevant resources are in our output directory.
             Cef.Initialize(settings, shutdownOnProcessExit: true, performDependencyCheck: true);

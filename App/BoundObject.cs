@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using CefSharp;
-using System.Threading;
 using System.Windows.Forms;
 using MP3CutAd.App.Controls;
 using System.IO;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using MP3CutAd.Core;
 
 namespace MP3CutAd.App {
     class VersionInfo {
@@ -95,14 +93,14 @@ namespace MP3CutAd.App {
         }
 
         public void DetectAD(string json, IJavascriptCallback callback, IJavascriptCallback progress) {
-            var files = JsonConvert.DeserializeObject<string[]>(json);
-
             var task = new Task(() => {
+                var files = JsonConvert.DeserializeObject<string[]>(json);
+
                 var notify = new Action<float>(p => {
                     progress.ExecuteAsync(p);
                 });
 
-                var result = MP3CutAd.Core.CutAD.DetectAD(files, notify);
+                var result = CutAD.DetectAD(files, notify);
 
                 var ret = result.Select(kv => {
                     var ranges = kv.Key;
@@ -123,31 +121,44 @@ namespace MP3CutAd.App {
         }
 
         public void Cut(string json, string outputDirectory, IJavascriptCallback callback, IJavascriptCallback progress) {
-            var example = new[] {
-               new {
-                    fullname = "",
-                    filename = "",
-                    directory = "",
-                    basename = "",
-                    extname = "",
-                    length = "",
-                    ads = new[] {
-                        new {
-                            gid = 0,
-                            start = 0,
-                            end = 0,
-                        }
-                    },
-                }
-            };
-            var files = JsonConvert.DeserializeAnonymousType(json, example);
-            Console.WriteLine(files);
+            var task = new Task(() => {
+                var example = new[] {
+                    new {
+                        fullname = "",
+                        filename = "",
+                        directory = "",
+                        basename = "",
+                        extname = "",
+                        length = "",
+                        ads = new[] {
+                            new {
+                                ignored = false,
+                                gid = 0,
+                                start = 0,
+                                end = 0,
+                            }
+                        },
+                    }
+                };
+                var files = JsonConvert.DeserializeAnonymousType(json, example);
 
-            var notify = new Action<float> (p => {
-                progress.ExecuteAsync(p);
+                var args = files.ToDictionary(
+                    file => file.fullname,
+                    file => file.ads
+                        .Where(ad => !ad.ignored)
+                        .Select(ad => new Range(ad.start / 100, ad.end / 100))
+                        .ToArray()
+                );
+
+                var notify = new Action<float>(p => {
+                    progress.ExecuteAsync(p);
+                });
+
+                CutAD.Cut(args, outputDirectory, notify);
+
+                callback.ExecuteJsonAsync(null, true);
             });
-
-            callback.ExecuteJsonAsync(null, true);
+            task.Start();
         }
     }
 }
