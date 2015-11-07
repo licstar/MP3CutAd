@@ -36,7 +36,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 561);
             this.Name = "MainForm";
-            this.Text = "Mp3 Cut Ad";
+            this.Text = "MP3 Cut Ad - 一个据说可以自动识别并去掉MP3有声读物里面反复出现的片头、片尾、广告的程序";
             this.ResumeLayout(false);
 
         }

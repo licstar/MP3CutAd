@@ -7,6 +7,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using MP3CutAd.Core;
+using System.Diagnostics;
 
 namespace MP3CutAd.App {
     class VersionInfo {
@@ -24,6 +25,14 @@ namespace MP3CutAd.App {
 
         public BoundObject(MainForm form) {
             this.form = form;
+
+            Application.ApplicationExit += OnApplicationExit;
+        }
+
+        private void OnApplicationExit(object sender, EventArgs e) {
+            if (ffplayProcess != null && !ffplayProcess.HasExited) {
+                ffplayProcess.Kill();
+            }
         }
 
         /// <summary>
@@ -157,6 +166,48 @@ namespace MP3CutAd.App {
                 CutAD.Cut(args, outputDirectory, notify);
 
                 callback.ExecuteJsonAsync(null, true);
+            });
+            task.Start();
+        }
+
+        private Process ffplayProcess = null;
+
+        public void Stop() {
+            if (ffplayProcess == null) return;
+            if (ffplayProcess.HasExited) return;
+
+            ffplayProcess.Kill();
+        }
+
+        public void Play(string filename, int start, int end, IJavascriptCallback complete) {
+            var task = new Task(() => {
+                Stop();
+                var ffplayPath = Path.Combine(Environment.CurrentDirectory, "../ffmpeg/ffplay.exe");
+
+                ffplayProcess = new Process();
+                ffplayProcess.StartInfo.FileName = ffplayPath;
+                var fstart = (float)start / 1000;
+                var fend = (float)end / 1000;
+                var duration = fend - fstart;
+                var arguments = String.Format(
+                    "-i \"{0}\" -ss {1} -t {2} -nodisp -autoexit",
+                    filename.Replace("\"", "\\\""),
+                    fstart,
+                    duration
+                );
+                Console.WriteLine(arguments);
+                ffplayProcess.StartInfo.Arguments = arguments;
+                ffplayProcess.StartInfo.UseShellExecute = false;
+                ffplayProcess.StartInfo.RedirectStandardError = true;
+                ffplayProcess.StartInfo.RedirectStandardOutput = true;
+                ffplayProcess.StartInfo.CreateNoWindow = true;
+                ffplayProcess.Start();
+
+                ffplayProcess.StandardError.ReadToEnd();
+                ffplayProcess.StandardOutput.ReadToEnd();
+                ffplayProcess.WaitForExit();
+                ffplayProcess = null;
+                complete.ExecuteAsync();
             });
             task.Start();
         }

@@ -130,3 +130,7 @@ _.formatDuration = function(time, showMs = false) {
 
   return text
 }
+
+_.timestamp = function() {
+  return (new Date).getTime()
+}

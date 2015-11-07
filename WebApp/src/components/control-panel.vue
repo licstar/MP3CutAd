@@ -19,7 +19,7 @@
 
   .control {
     justify-content: flex-end;
-    flex: 1;
+    margin-left: 20px;
     padding-right: 4px;
 
     .time {
@@ -50,13 +50,13 @@
 <template>
   <div class="control-panel h-box">
     <div class="player h-box">
+      <div class="progress">
+        <progress-bar :progress="playProgress"></progress-bar>
+      </div>
       <div class="control h-box">
         <span class="time h-box">片段时长：{{duration}}</span>
-        <i class="play fa fa-play" @click="play"></i>
+        <i class="play fa fa-play" :class="[(playing ? 'fa-stop' : 'fa-play')]" @click="play"></i>
       </div>
-      <!-- <div class="progress">
-        <progress-bar :progress="0.5"></progress-bar>
-      </div> -->
     </div>
 
     <div class="ad-control h-box">
@@ -72,6 +72,12 @@ var _ = require('../utils')
 
 module.exports = {
   props: ['ad', 'file'],
+  data() {
+    return {
+      playing: false,
+      playTime: 0,
+    }
+  },
   computed: {
     disable() {
       return !(this.ad && this.file)
@@ -84,20 +90,36 @@ module.exports = {
     tagButtonText() {
       if (!this.ad) return ''
       return this.ad.ignored ? '这是广告' : '不是广告'
+    },
+    playProgress() {
+      if (!this.ad || !this.file) return 0
+      if (!this.playing) return 0
+      if (this.playTime <= 0) return 0
+      return this.playTime / this.file.length
     }
   },
   methods: {
     play() {
-      alert('播放：' + JSON.stringify({
-        fullname: this.file.fullname,
-        start: this.ad.start,
-        end: this.ad.end
-      }, null, '  '))
-      console.log(this.file.fullname, this.ad.start, this.ad.end)
-      var audio = new Audio
+      if (!this.playing) {
+        this.playing = true
+        var freq = 200
+        var beginTime = _.timestamp()
+        this.playTime = this.ad.start
+        this.playingTimer = setInterval(() => {
+          this.playTime = this.ad.start + _.timestamp() - beginTime
+        }, freq)
 
-      audio.src = 'file:///' + this.file.fullname.replace(/\\/g, '/')
-      audio.play()
+        bound.play(this.file.fullname, this.ad.start, this.ad.end, () => {
+          clearInterval(this.playTimeer)
+          this.playing = false
+          this.playTime = 0
+        })
+      } else {
+        clearInterval(this.playTimeer)
+        this.playing = false
+        this.playTime = 0
+        bound.stop()
+      }
     },
     tagAd() {
       this.ad.ignored = !this.ad.ignored
