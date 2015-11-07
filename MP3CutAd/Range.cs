@@ -15,14 +15,14 @@ namespace MP3CutAd.Core {
             this.begin = begin;
             this.end = end;
             this.count = count;
-            this.type = 0;
+            this.type = -1;
         }
 
         public Range(int begin, int end) {
             this.begin = begin;
             this.end = end;
             this.count = 1;
-            this.type = 0;
+            this.type = -1;
         }
 
         public bool InRange(int p) {
@@ -42,6 +42,12 @@ namespace MP3CutAd.Core {
             this.f1 = f1;
             this.f2 = f2;
             this.p1 = p1;
+            this.p2 = p2;
+        }
+        public Link(int f2, int p2) {
+            this.f1 = -1;
+            this.f2 = f2;
+            this.p1 = -1;
             this.p2 = p2;
         }
     }

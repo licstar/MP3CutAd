@@ -19,7 +19,6 @@
 
   .control {
     justify-content: flex-end;
-    margin-left: 20px;
     padding-right: 4px;
 
     .time {
@@ -39,6 +38,7 @@
   }
   .progress {
     flex: 1;
+    margin: 0 10px;
   }
 }
 .ad-control {

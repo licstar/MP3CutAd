@@ -131,10 +131,8 @@ namespace MP3CutAd.Core {
                     notify((int)log.GetTimeUsed().TotalSeconds, (int)log.EstimateTime().TotalSeconds);
                 }
 
-                CalcRangeTypes(ranges, links);
-                //for (int j = 0; j < fileList.Count; j++) {
-                //    ranges[j] = CompresssRange(ranges[j]);
-                //}
+
+                
 
                 //存储广告位置
                 //for (int i = 0; i < fileList.Count; i++) {
@@ -149,7 +147,10 @@ namespace MP3CutAd.Core {
                 //log.Log(Console.Out, "\t{0:F1}\n");
 
             }
-
+            for (int j = 0; j < ranges.Count; j++) {
+                ranges[j] = CompresssRange(ranges[j]);
+            }
+            CalcRangeTypes(ranges, links);
             //读取广告位置，并且报告出现次数
             //for (int i = 0; i < fileList.Count; i++) {
             //    var range_file = fileList[i] + ".range";
@@ -172,23 +173,48 @@ namespace MP3CutAd.Core {
         }
 
 
-        //private static void In
+        private static void SetRangeType(List<List<Range>> ranges, List<Link>[][] rangeLinks, int i, int j, int typeId) {
+            ranges[i][j].type = typeId;
+            foreach (var link in rangeLinks[i][j]) {
+                if (ranges[link.f2][link.p2].type == -1)
+                    SetRangeType(ranges, rangeLinks, link.f2, link.p2, typeId);
+            }
+        }
 
         private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
-            //把link从时间刻度对应到range上
-            List<Link>[] rangeLinks = new List<Link>[ranges.Count]; //储存link的图
+
+            List<Link>[][] rangeLinks = new List<Link>[ranges.Count][]; //储存link的图
+            //rangeLinks[i][j]对应ranges[i][j]，表示这个区间和那些别的区间有联系
+
             for (int i = 0; i < rangeLinks.Length; i++) {
-                rangeLinks[i] = new List<Link>();
+                rangeLinks[i] = new List<Link>[ranges[i].Count];
+                for (int j = 0; j < rangeLinks[i].Length; j++) {
+                    rangeLinks[i][j] = new List<Link>();
+                }
             }
-            //
+
             foreach (var link in links) {
+                //把link从时间刻度对应到range上
                 int i1 = ranges[link.f1].FindIndex(r => r.InRange(link.p1));
                 int i2 = ranges[link.f2].FindIndex(r => r.InRange(link.p2));
 
+                //图中添加边
+                rangeLinks[link.f1][i1].Add(new Link(link.f2, i2));
+                rangeLinks[link.f2][i2].Add(new Link(link.f1, i1));
             }
-            for (int i = 0; i < links.Count; i++) {
-                //    ranges
+
+            int typeId = 0;
+            for (int i = 0; i < ranges.Count; i++) {
+                for (int j = 0; j < ranges[i].Count; j++) {
+                    var r = ranges[i][j];
+                    if (r.type == -1) {
+                        SetRangeType(ranges, rangeLinks, i, j, typeId);
+                        typeId++;
+                    }
+                }
             }
+
+            //TODO 可以加入统计一下每个type都有几个区间，如果只有两个的话，考虑直接删掉
         }
 
         public static void Cut(Dictionary<string, Range[]> files, string path, Action<int, int> notify) {
@@ -327,19 +353,21 @@ namespace MP3CutAd.Core {
                 //if (ss.Count > 0)
                 //    Console.WriteLine("{0} {1} {2} {3}", p1 + prev, p1 + next, next - prev, ss.Average());
 
-                if (next - prev >= 20) {
-                    CreateRange(range1, len1, new Range(p1 + prev, p1 + next));
-                    CreateRange(range2, len2, new Range(p2 + prev, p2 + next));
-                    ret.Add(new KeyValuePair<int, int>(p1, p2));
-                }
+
+                int b1 = CreateRange(range1, len1, new Range(p1 + prev, p1 + next));
+                int b2 = CreateRange(range2, len2, new Range(p2 + prev, p2 + next));
+                if (b1 != -1 && b2 != -1)
+                    ret.Add(new KeyValuePair<int, int>(b1, b2));
+
             }
             return ret;
         }
 
-        private static void CreateRange(List<Range> range, int len, Range add) {
+        //返回一个在区间内的点
+        private static int CreateRange(List<Range> range, int len, Range add) {
             if (add.begin <= 50) add.begin = 0;
             if (add.end >= len - 50) add.end = len;
-            if (add.begin >= add.end - 20) return; //至少要两秒
+            if (add.begin >= add.end - 20) return -1; //至少要两秒
 
             bool cross = false;
             for (int i = 0; i < range.Count; i++) {
@@ -353,6 +381,7 @@ namespace MP3CutAd.Core {
             if (!cross) {
                 range.Add(add);
             }
+            return add.begin;
         }
 
         private static List<Range> CompresssRange(List<Range> range) {
