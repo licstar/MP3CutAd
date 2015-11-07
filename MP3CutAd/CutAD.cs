@@ -7,7 +7,10 @@ using System.Threading.Tasks;
 
 namespace MP3CutAd.Core {
     public class CutAD {
-        public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files) {
+        public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files, Action<float> notify) {
+            // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
+
+
             //var mp3Dir = args[0];
             //var outDir = args[1];
             var tmpDir = Path.Combine(Path.GetTempPath(), "mp3cut");
@@ -145,8 +148,8 @@ namespace MP3CutAd.Core {
             return ret;
         }
 
-        public static void Cut(Dictionary<string, Range[]> files, string path) {
-
+        public static void Cut(Dictionary<string, Range[]> files, string path, Action<float> notify) {
+            // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
         }
 
         // 输入字典为<文件名，被判断为广告的所有区间>

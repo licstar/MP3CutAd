@@ -94,11 +94,15 @@ namespace MP3CutAd.App {
             callback.ExecuteJsonAsync(null, fileNames);
         }
 
-        public void DetectAD(string json, IJavascriptCallback callback) {
+        public void DetectAD(string json, IJavascriptCallback callback, IJavascriptCallback progress) {
             var files = JsonConvert.DeserializeObject<string[]>(json);
-            
-            var task = new Task(() => { 
-                var result = MP3CutAd.Core.CutAD.DetectAD(files);
+
+            var task = new Task(() => {
+                var notify = new Action<float>(p => {
+                    progress.ExecuteAsync(p);
+                });
+
+                var result = MP3CutAd.Core.CutAD.DetectAD(files, notify);
 
                 var ret = result.Select(kv => {
                     var ranges = kv.Key;
@@ -118,7 +122,7 @@ namespace MP3CutAd.App {
             task.Start();
         }
 
-        public void Cut(string json, string outputDirectory, IJavascriptCallback callback) {
+        public void Cut(string json, string outputDirectory, IJavascriptCallback callback, IJavascriptCallback progress) {
             var example = new[] {
                new {
                     fullname = "",
@@ -138,6 +142,10 @@ namespace MP3CutAd.App {
             };
             var files = JsonConvert.DeserializeAnonymousType(json, example);
             Console.WriteLine(files);
+
+            var notify = new Action<float> (p => {
+                progress.ExecuteAsync(p);
+            });
 
             callback.ExecuteJsonAsync(null, true);
         }

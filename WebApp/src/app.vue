@@ -13,12 +13,12 @@ body {
   height: 100%;
   min-height: 320px;
 }
+#header {
+  width: 100%;
+}
 #body {
   width: 100%;
   flex: 1;
-}
-#footer {
-  width: 100%;
 }
 
 #sidebar {
@@ -61,6 +61,9 @@ body {
 
 <template>
   <div id="wrap" class="v-box">
+    <div id="header">
+      <control-panel :ad="selectedAd" :file="selectedFile"></control-panel>
+    </div>
     <div id="body" class="h-box">
       <div id="sidebar" class="v-box">
           <button class="pure-button pure-button-primary" @click="openFile">
@@ -92,9 +95,6 @@ body {
           @select-ad="selectAd"
           :group-count="groupCount"></file-list>
       </div>
-    </div>
-    <div id="footer">
-      <control-panel :ad="selectedAd" :file="selectedFile"></control-panel>
     </div>
   </div>
 
@@ -161,38 +161,45 @@ module.exports = {
         if (this.loadingProgress > 0.95) this.loadingProgress = 0.95
       }, 500)
       this.loadingProgress = 0
-      bound.detectAD(JSON.stringify(this.selectedFiles.map(f => f.fullname)), (err, result) => {
-        this.loading = false
-        clearInterval(timer)
-        result = JSON.parse(result)
+      bound.detectAD(JSON.stringify(this.selectedFiles.map(f => f.fullname)),
+        (err, result) => {
+          this.loading = false
+          clearInterval(timer)
+          result = JSON.parse(result)
 
-        var groups = [];
-        result.forEach((ret, i) => {
-          var file = this.selectedFiles[i]
-          file.length = ret.length
-          var ads = ret.ads
-          ads.forEach((ad, j) => {
-            var gid = ad.gid
-            if (groups.indexOf(gid) === -1) {
-              groups.push(gid)
-            }
-            ad.ignored = false
+          var groups = [];
+          result.forEach((ret, i) => {
+            var file = this.selectedFiles[i]
+            file.length = ret.length
+            var ads = ret.ads
+            ads.forEach((ad, j) => {
+              var gid = ad.gid
+              if (groups.indexOf(gid) === -1) {
+                groups.push(gid)
+              }
+              ad.ignored = false
+            })
+            file.ads = ads
           })
-          file.ads = ads
-        })
-        this.groupCount = groups.length
-      })
+          this.groupCount = groups.length
+        },
+        progress => this.loadingProgress = progress
+      )
     },
 
     cut() {
+      this.loadingProgress = 0
       bound.selectDirectory((err, path) => {
         path = JSON.parse(path)
         if (path) {
           this.loading = true
-          bound.cut(JSON.stringify(this.selectedFiles), path, (err, result) => {
-            alert(JSON.stringify(['cut', err, result, path], null, '  '))
-            this.loading = false
-          })
+          bound.cut(JSON.stringify(this.selectedFiles), path,
+            (err, result) => {
+              alert(JSON.stringify(['cut', err, result, path], null, '  '))
+              this.loading = false
+            },
+            progress => this.loadingProgress = progress
+          )
         }
       })
     },

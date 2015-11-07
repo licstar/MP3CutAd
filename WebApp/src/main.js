@@ -2,7 +2,9 @@ var Vue = require('vue')
 var App = require('./app.vue')
 window.Vue = Vue
 
-Vue.config.debug = true;
+if (process.env.NODE_ENV !== 'production') {
+  Vue.config.debug = true;
+}
 
 new Vue({
   el: 'body',
