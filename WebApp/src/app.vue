@@ -31,6 +31,10 @@ body {
   button {
     width: 100%;
     margin-bottom: 10px;
+
+    i {
+      width: 1em;
+    }
   }
 }
 #main {
@@ -88,6 +92,10 @@ body {
           <button class="pure-button pure-button-secondary" :disabled="selectedFiles.length === 0" @click="cut">
             <i class="fa fa-scissors"></i>
             <span>干！</span>
+          </button>
+          <button class="pure-button pure-button-warning" @click="clearList">
+            <i class="fa fa-trash-o"></i>
+            <span>清空列表</span>
           </button>
           <button class="pure-button pure-button-warning" @click="showDevTools">
             <i class="fa fa-cog"></i>
@@ -156,11 +164,14 @@ module.exports = {
         result.forEach(this.addFile)
       })
     },
+    clearList() {
+      this.selectedFiles.splice(0, this.selectedFiles.length)
+      this.selectAd(null, null)
+    },
     removeFile(file) {
       this.selectedFiles.$remove(file)
       if (file === this.selectedFile) {
-        this.selectedFile = null
-        this.selectedAd = null
+        this.selectAd(null, null)
       }
       return false
     },
@@ -192,7 +203,8 @@ module.exports = {
             })
             file.ads = ads
           })
-          this.typeCount = types.length
+          this.typeCount = Math.max.apply(Math, types)
+          console.log(types, this.typeCount)
         },
         (used, left) => {
           this.timeUsed = used
