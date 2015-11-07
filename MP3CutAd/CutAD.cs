@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace MP3CutAd.Core {
-    public class CutAD {
+    public partial class CutAD {
         /// <summary>
         /// 检测一系列MP3文件包含的广告（重复出现的部分）
         /// </summary>
@@ -132,7 +132,7 @@ namespace MP3CutAd.Core {
                 }
 
 
-                
+
 
                 //存储广告位置
                 //for (int i = 0; i < fileList.Count; i++) {
@@ -173,49 +173,6 @@ namespace MP3CutAd.Core {
         }
 
 
-        private static void SetRangeType(List<List<Range>> ranges, List<Link>[][] rangeLinks, int i, int j, int typeId) {
-            ranges[i][j].type = typeId;
-            foreach (var link in rangeLinks[i][j]) {
-                if (ranges[link.f2][link.p2].type == -1)
-                    SetRangeType(ranges, rangeLinks, link.f2, link.p2, typeId);
-            }
-        }
-
-        private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
-
-            List<Link>[][] rangeLinks = new List<Link>[ranges.Count][]; //储存link的图
-            //rangeLinks[i][j]对应ranges[i][j]，表示这个区间和那些别的区间有联系
-
-            for (int i = 0; i < rangeLinks.Length; i++) {
-                rangeLinks[i] = new List<Link>[ranges[i].Count];
-                for (int j = 0; j < rangeLinks[i].Length; j++) {
-                    rangeLinks[i][j] = new List<Link>();
-                }
-            }
-
-            foreach (var link in links) {
-                //把link从时间刻度对应到range上
-                int i1 = ranges[link.f1].FindIndex(r => r.InRange(link.p1));
-                int i2 = ranges[link.f2].FindIndex(r => r.InRange(link.p2));
-
-                //图中添加边
-                rangeLinks[link.f1][i1].Add(new Link(link.f2, i2));
-                rangeLinks[link.f2][i2].Add(new Link(link.f1, i1));
-            }
-
-            int typeId = 0;
-            for (int i = 0; i < ranges.Count; i++) {
-                for (int j = 0; j < ranges[i].Count; j++) {
-                    var r = ranges[i][j];
-                    if (r.type == -1) {
-                        SetRangeType(ranges, rangeLinks, i, j, typeId);
-                        typeId++;
-                    }
-                }
-            }
-
-            //TODO 可以加入统计一下每个type都有几个区间，如果只有两个的话，考虑直接删掉
-        }
 
         public static void Cut(Dictionary<string, Range[]> files, string path, Action<int, int> notify) {
             // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
@@ -223,59 +180,7 @@ namespace MP3CutAd.Core {
             //    CutAndCombine(mp3FileList[i], outFileList[i], fileList[i], ranges[i]);
             //}
         }
-
-        // 输入字典为<文件名，被判断为广告的所有区间>
-        // 第二个参数是输出目录
-
-        public static void Play(string filename, Range range) {
-
-        }
-
-        //// 播放一个文件的某个区间
-
-        //public int GetLengthOfFile(string mp3Filename) {
-        //    // 音频长度毫秒数
-        //}
-
-        //// 或者它的批量版本
-        //public int[] GetLengthOfFiles(string[] mp3Files) {
-
-        //}
-
-
-        private static List<Range> CombineToRanges(List<Range> range, List<Range> add) {
-            for (int i = 0; i < add.Count; i++) {
-                add[i].count = 1;
-            }
-            range.AddRange(add);
-            return CompresssRange(range);
-        }
-
-        private static List<Range> ReverseRange(List<Range> range, int len) {
-            var ret = new List<Range>();
-            range = range.FindAll(x => x.count > 1);
-            range.Sort((a, b) => a.begin.CompareTo(b.begin));
-            if (range.Count != 0) {
-                if (range[0].begin != 0) {
-                    ret.Add(new Range(0, range[0].begin));
-                }
-                for (int i = 1; i < range.Count; i++) {
-                    ret.Add(new Range(range[i - 1].end, range[i].begin));
-                }
-                if (range.Last().end != len) {
-                    ret.Add(new Range(range.Last().end, len));
-                }
-            } else {
-                ret.Add(new Range(0, len));
-            }
-
-            int sum = 0;
-            foreach (var o in range) {
-                sum += o.end - o.begin;
-            }
-            Console.WriteLine("{0}\t{1}\t{2}", range.Count, sum, len);
-            return ret;
-        }
+        
 
         private static void CutAndCombine(string mp3, string output, string wav, List<Range> range) {
 
@@ -294,14 +199,14 @@ namespace MP3CutAd.Core {
         }
 
         //输入候选，输出时间区间
-        private static List<KeyValuePair<int, int>> FineTune(double[,] fft1, double[,] fft2,
+        private static List<KeyValuePair<Range, Range>> FineTune(double[,] fft1, double[,] fft2,
              List<int> hash1, List<int> hash2,
              List<Range> range1, List<Range> range2,
             int size, List<KeyValuePair<int, int>> sames) {
 
             int len1 = fft1.GetLength(0);
             int len2 = fft2.GetLength(0);
-            var ret = new List<KeyValuePair<int, int>>();
+            var ret = new List<KeyValuePair<Range, Range>>();
 
             foreach (var same in sames) {
                 int p1 = same.Key;
@@ -330,7 +235,7 @@ namespace MP3CutAd.Core {
                 int size2 = step * 2;
 
                 // double change = 1.08; //改变量大于这个，就认为是不同的
-                double threshold = 0.82;// LSH.sim(fft1, fft2, p1, p2, size2) / change - 0.01;
+                double threshold = 0.75;// LSH.sim(fft1, fft2, p1, p2, size2) / change - 0.01;
 
                 List<double> ss = new List<double>();
                 for (; p1 + next + size2 < len1 && p2 + next + size2 < len2; next += step) {
@@ -354,52 +259,15 @@ namespace MP3CutAd.Core {
                 //    Console.WriteLine("{0} {1} {2} {3}", p1 + prev, p1 + next, next - prev, ss.Average());
 
 
-                int b1 = CreateRange(range1, len1, new Range(p1 + prev, p1 + next));
-                int b2 = CreateRange(range2, len2, new Range(p2 + prev, p2 + next));
-                if (b1 != -1 && b2 != -1)
-                    ret.Add(new KeyValuePair<int, int>(b1, b2));
+                var r1 = CreateRange(range1, len1, new Range(p1 + prev, p1 + next));
+                var r2 = CreateRange(range2, len2, new Range(p2 + prev, p2 + next));
+                if (r1 != null && r2 != null)
+                    ret.Add(new KeyValuePair<Range, Range>(r1, r2));
 
             }
             return ret;
         }
 
-        //返回一个在区间内的点
-        private static int CreateRange(List<Range> range, int len, Range add) {
-            if (add.begin <= 50) add.begin = 0;
-            if (add.end >= len - 50) add.end = len;
-            if (add.begin >= add.end - 20) return -1; //至少要两秒
-
-            bool cross = false;
-            for (int i = 0; i < range.Count; i++) {
-                var r = range[i];
-                if (r.begin > add.end || r.end < add.begin) //不相交
-                    continue;
-                cross = true;
-                var r2 = new Range(Math.Min(r.begin, add.begin), Math.Max(r.end, add.end), add.count + r.count);
-                range[i] = r2;
-            }
-            if (!cross) {
-                range.Add(add);
-            }
-            return add.begin;
-        }
-
-        private static List<Range> CompresssRange(List<Range> range) {
-            var ret = new List<Range>();
-            foreach (var r in range) {
-                CreateRange(ret, int.MaxValue, r);
-            }
-            return ret;
-        }
-
-        private static bool InRange(List<Range> range, int value) {
-            foreach (var r in range) {
-                if (value >= r.begin && value < r.end) {
-                    return true;
-                }
-            }
-            return false;
-        }
 
         private static List<KeyValuePair<int, int>> CheckSame(double[,] fft1, double[,] fft2, List<int> hash1, List<int> hash2, int size) {
             Dictionary<int, List<int>> pos = new Dictionary<int, List<int>>();
