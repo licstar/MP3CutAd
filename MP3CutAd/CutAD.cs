@@ -5,12 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MP3CutAd {
-    class CutAD {
-        public static List<KeyValuePair<List<Range>, int>> detectAD(string[] mp3Files) {
+namespace MP3CutAd.Core {
+    public class CutAD {
+        public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files, Action<float> notify) {
+            // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
+
+
             //var mp3Dir = args[0];
             //var outDir = args[1];
-            var tmpDir = Path.GetTempPath() + "\\mp3cut\\";
+            var tmpDir = Path.Combine(Path.GetTempPath(), "mp3cut");
 
             Directory.CreateDirectory(tmpDir);
 
@@ -149,6 +152,7 @@ namespace MP3CutAd {
             return ret;
         }
 
+
         private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
             List<Link> rangeLinks = new List<Link>();
             //
@@ -158,8 +162,8 @@ namespace MP3CutAd {
             }
         }
 
-        public static void Cut(Dictionary<string, Range[]> files, string path) {
-
+        public static void Cut(Dictionary<string, Range[]> files, string path, Action<float> notify) {
+            // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
         }
 
         // 输入字典为<文件名，被判断为广告的所有区间>

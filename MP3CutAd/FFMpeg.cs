@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
-namespace MP3CutAd {
+namespace MP3CutAd.Core {
     class FFMpeg {
-        private static string path = @"D:\tools\ffmpeg-20151101-git-dee7440-win64-static\bin\ffmpeg";
+        private static string path = Path.Combine(Environment.CurrentDirectory, "../ffmpeg/ffmpeg.exe");
 
         private static void run(string argument) {
             Process p = new Process();

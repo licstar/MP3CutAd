@@ -7,7 +7,7 @@ using System.Text;
 using MathNet.Numerics.IntegralTransforms;
 using System.Numerics;
 
-namespace MP3CutAd {
+namespace MP3CutAd.Core {
     class MyFFT {
 
         public const int len = 128; //对多少个采样点做fft（记得保持 len <= step，否则会浪费）

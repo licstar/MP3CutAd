@@ -1,0 +1,41 @@
+.pure-button {
+  color: white;
+  border-radius: 4px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+.pure-button-success {
+  background: rgb(28, 184, 65); /* this is a green */
+}
+.pure-button-error {
+  background: rgb(202, 60, 60); /* this is a maroon */
+}
+.pure-button-warning {
+  background: rgb(223, 117, 20); /* this is an orange */
+}
+.pure-button-secondary {
+  background: rgb(66, 184, 221); /* this is a light blue */
+}
+
+.h-box {
+  display: flex;
+}
+.v-box {
+  display: flex;
+  flex-direction: column;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  animation: spin 2000ms infinite ease-in-out;
+}
