@@ -52,7 +52,7 @@ namespace MP3CutAd.App {
             var cwd = System.Environment.CurrentDirectory;
             var webPath = Path.Combine(cwd, @"../WebApp/index.html").Replace(" ", "%20").Replace('\\', '/');
             var url = "file:///" + webPath;
-            url = "http://localhost:8080/webpack-dev-server/";
+            //url = "http://localhost:8080/webpack-dev-server/";
             
             Browser.Load(url);
         }

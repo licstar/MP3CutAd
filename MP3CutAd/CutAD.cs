@@ -28,6 +28,12 @@ namespace MP3CutAd.Core {
 
             List<Link> links = new List<Link>();
 
+            TimeEstimater log = new TimeEstimater();
+            log.InitType("wav", mp3Files.Length);
+            log.InitType("fft", mp3Files.Length);
+            log.InitType("hash", mp3Files.Length);
+            log.InitType("compare", mp3Files.Length * (mp3Files.Length - 1) / 2);
+
             foreach (var fn in mp3Files) {
                 var f = new FileInfo(fn);
                 if (f.Extension.ToLower() != ".mp3")
@@ -38,8 +44,7 @@ namespace MP3CutAd.Core {
                 var wavFile = tmpDir + f.Name + ".wav";
                 var fftFile = wavFile + ".fft";
 
-                TimeLogger log = new TimeLogger();
-                //DateTime last = DateTime.Now;
+                log.StartTimer("wav");
 
                 ///
                 /// 1. 转wav
@@ -48,7 +53,9 @@ namespace MP3CutAd.Core {
                     FFMpeg.Mp3toWav(f.FullName, wavFile);
                 fileList.Add(wavFile);
 
-                log.Log(Console.Out, "\t{0:F1}");
+                log.EndTimer("wav");
+                notify(log.EstimateProgress());
+                log.StartTimer("fft");
 
                 /// 
                 /// 2. fft
@@ -62,8 +69,9 @@ namespace MP3CutAd.Core {
                     ffts.Add(ReadArrayFromFile(fftFile));
                 }
 
-                log.Log(Console.Out, "\t{0:F1}");
-
+                log.EndTimer("fft");
+                notify(log.EstimateProgress());
+                log.StartTimer("hash");
 
                 /// 
                 /// 3. hash
@@ -88,12 +96,18 @@ namespace MP3CutAd.Core {
                 }
                 hashs.Add(hash);
 
-                log.Log(Console.Out, "\t{0:F1}");
+                log.EndTimer("hash");
+                notify(log.EstimateProgress());
+
+                //log.Log(Console.Out, "\t{0:F1}");
 
                 ranges.Add(new List<Range>());
 
                 for (int i = 0; i < fileList.Count - 1; i++) {
                     int j = fileList.Count - 1;
+
+                    log.StartTimer("compare");
+
                     var ranges_i = new List<Range>();
                     var ranges_j = new List<Range>();
                     var lst = CheckSame(ffts[i], ffts[j], hashs[i], hashs[j], size);
@@ -110,6 +124,9 @@ namespace MP3CutAd.Core {
                     ranges_j = CompresssRange(ranges_j);
                     ranges[i] = CombineToRanges(ranges[i], ranges_i);
                     ranges[j] = CombineToRanges(ranges[j], ranges_j);
+
+                    log.EndTimer("compare");
+                    notify(log.EstimateProgress());
                 }
 
                 CalcRangeTypes(ranges, links);
@@ -127,7 +144,7 @@ namespace MP3CutAd.Core {
                 //    }
                 //}
 
-                log.Log(Console.Out, "\t{0:F1}\n");
+                //log.Log(Console.Out, "\t{0:F1}\n");
 
             }
 
@@ -154,11 +171,17 @@ namespace MP3CutAd.Core {
 
 
         private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
-            List<Link> rangeLinks = new List<Link>();
+            //把link从时间刻度对应到range上
+            List<Link>[] rangeLinks = new List<Link>[ranges.Count]; //储存link的图
+            for (int i = 0; i < rangeLinks.Length; i++) {
+                rangeLinks[i] = new List<Link>();
+            }
             //
-
-            for (int i = 0; i < ranges.Count; i++) {
-
+            foreach (var link in links) {
+                //    link.f1 = 
+            }
+            for (int i = 0; i < links.Count; i++) {
+                //    ranges
             }
         }
 
@@ -428,4 +451,5 @@ namespace MP3CutAd.Core {
         }
 
     }
+
 }
