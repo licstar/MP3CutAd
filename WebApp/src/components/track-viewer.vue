@@ -2,7 +2,7 @@
 @import url(../settings.less);
 
 .track-viewer {
-  @control-size: 32px;
+  @control-size: 18px;
   height: @control-size * 2;
 
   .time {

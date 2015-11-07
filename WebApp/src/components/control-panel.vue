@@ -3,6 +3,7 @@
 
 .control-panel {
   position: relative;
+  height: 40px;
 }
 .mask {
   position: absolute;
@@ -13,24 +14,34 @@
   background: @o-l-color;
 }
 .player {
-  padding-left: 10px;
   align-items: center;
   flex: 1;
 
-  i {
-    margin: 0 10px;
-    cursor: pointer;
+  .control {
+    padding-left: 4px;
+    i {
+      margin: 0 4px;
+      cursor: pointer;
+    }
+  }
+  .progress {
+    flex: 1;
   }
 }
 .ad-control {
+  padding-right: 4px;
 }
 </style>
 
 <template>
   <div class="control-panel h-box">
     <div class="player h-box">
-      <i class="play fa fa-play" @click="play"></i>
-      <div class="progress-bar">你就当我是进度条吧</div>
+      <div class="control h-box">
+        <i class="play fa fa-play" @click="play"></i>
+      </div>
+      <div class="progress">
+        <!-- <progress-bar :progress="0.5"></progress-bar> -->
+      </div>
     </div>
 
     <div class="ad-control">
@@ -65,6 +76,9 @@ module.exports = {
     tagAd() {
       this.ad.ignored = !this.ad.ignored
     }
+  },
+  components: {
+    ProgressBar: require('./progress-bar.vue')
   }
 }
 </script>

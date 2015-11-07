@@ -5,6 +5,7 @@
 body {
   font: 100% @font-stack;
   color: @primary-color;
+  background-color: @bg-color;
 }
 #wrap {
   position: absolute;
@@ -52,6 +53,9 @@ body {
   div {
     font-size: 24px;
   }
+  .progress {
+    width: 80%;
+  }
 }
 </style>
 
@@ -97,6 +101,7 @@ body {
   <div id="loading" v-show="loading" class="v-box">
     <i class="fa fa-spinner spinner"></i>
     <div>玩命计算中</div>
+    <div class="progress"><progress-bar :progress="loadingProgress"></progress-bar></div>
   </div>
 </template>
 
@@ -110,7 +115,8 @@ module.exports = {
       groupCount: 0,
       selectedFile: null,
       selectedAd: null,
-      loading: false
+      loading: false,
+      loadingProgress: 0
     }
   },
   methods: {
@@ -148,8 +154,16 @@ module.exports = {
     },
     detectAd() {
       this.loading = true
+      var timer = setInterval(() => {
+        var step = 0.1
+        if (this.loadingProgress > 0.6) step = 0.05
+        this.loadingProgress += Math.random() * step
+        if (this.loadingProgress > 0.95) this.loadingProgress = 0.95
+      }, 500)
+      this.loadingProgress = 0
       bound.detectAD(JSON.stringify(this.selectedFiles.map(f => f.fullname)), (err, result) => {
         this.loading = false
+        clearInterval(timer)
         result = JSON.parse(result)
 
         var groups = [];
@@ -189,7 +203,8 @@ module.exports = {
   },
   components: {
     FileList: require('./components/file-list.vue'),
-    ControlPanel: require('./components/control-panel.vue')
+    ControlPanel: require('./components/control-panel.vue'),
+    ProgressBar: require('./components/progress-bar.vue')
   }
 }
 </script>
