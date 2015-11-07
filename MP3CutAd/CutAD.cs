@@ -7,12 +7,14 @@ using System.Threading.Tasks;
 
 namespace MP3CutAd.Core {
     public class CutAD {
+        /// <summary>
+        /// 检测一系列MP3文件包含的广告（重复出现的部分）
+        /// </summary>
+        /// <param name="mp3Files"></param>
+        /// <param name="notify">在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数</param>
+        /// <returns>对应各个MP3的广告区间</returns>
         public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files, Action<float> notify) {
-            // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
-
-
-            //var mp3Dir = args[0];
-            //var outDir = args[1];
+            
             var tmpDir = Path.Combine(Path.GetTempPath(), "mp3cut");
 
             Directory.CreateDirectory(tmpDir);
