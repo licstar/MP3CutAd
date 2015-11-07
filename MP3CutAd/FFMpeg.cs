@@ -13,6 +13,7 @@ namespace MP3CutAd.Core {
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.CreateNoWindow = true;
             p.Start();
 
             p.StandardError.ReadToEnd();
