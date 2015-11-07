@@ -117,6 +117,7 @@ body {
 
 <script>
 var _ = require('./utils')
+require('./components/fade-transition.vue')
 
 module.exports = {
   data() {
@@ -157,6 +158,10 @@ module.exports = {
     },
     removeFile(file) {
       this.selectedFiles.$remove(file)
+      if (file === this.selectedFile) {
+        this.selectedFile = null
+        this.selectedAd = null
+      }
       return false
     },
     selectAd(file, ad) {
