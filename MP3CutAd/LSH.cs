@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MP3CutAd {
+namespace MP3CutAd.Core {
     class LSH {
         public static double sim(double[,] a, double[,] b, int offsetA, int offsetB, int size) {
             double f = 0, na = 0, nb = 0;

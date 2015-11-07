@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MP3CutAd {
-    class Range {
+namespace MP3CutAd.Core {
+    public class Range {
         public int begin;
         public int end;
         public int count;

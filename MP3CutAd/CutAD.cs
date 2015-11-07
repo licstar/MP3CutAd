@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MP3CutAd {
-    class CutAD {
-        public static List<KeyValuePair<List<Range>, int>> detectAD(string[] mp3Files) {
+namespace MP3CutAd.Core {
+    public class CutAD {
+        public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files) {
             //var mp3Dir = args[0];
             //var outDir = args[1];
-            var tmpDir = Path.GetTempPath() + "\\mp3cut\\";
+            var tmpDir = Path.Combine(Path.GetTempPath(), "mp3cut");
 
             Directory.CreateDirectory(tmpDir);
 
@@ -133,7 +133,8 @@ namespace MP3CutAd {
                         if (x.Length != 3) continue;
                         range.Add(new Range(int.Parse(x[0]), int.Parse(x[1]), int.Parse(x[2])));
                     }
-                    ranges[i] = ReverseRange(range, ffts[i].GetLength(0));
+                    //ranges[i] = ReverseRange(range, ffts[i].GetLength(0));
+                    ranges[i] = range;
                 }
             }
 

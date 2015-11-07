@@ -7,6 +7,9 @@
 *.userosscache
 *.sln.docstates
 /temp/*
+/ffmpeg/*
+/pack/*
+/pack.7z
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
