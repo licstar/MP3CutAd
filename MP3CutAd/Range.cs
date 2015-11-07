@@ -24,6 +24,13 @@ namespace MP3CutAd.Core {
             this.count = 1;
             this.type = 0;
         }
+
+        public bool InRange(int p) {
+            if (begin <= p && p <= end)
+                return true;
+            else
+                return false;
+        }
     }
 
     class Link {

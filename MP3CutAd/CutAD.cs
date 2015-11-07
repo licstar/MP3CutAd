@@ -13,8 +13,8 @@ namespace MP3CutAd.Core {
         /// <param name="mp3Files"></param>
         /// <param name="notify">在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数</param>
         /// <returns>对应各个MP3的广告区间</returns>
-        public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files, Action<float> notify) {
-            
+        public static List<KeyValuePair<List<Range>, int>> DetectAD(string[] mp3Files, Action<int, int> notify) {
+
             var tmpDir = Path.Combine(Path.GetTempPath(), "mp3cut");
 
             Directory.CreateDirectory(tmpDir);
@@ -56,7 +56,7 @@ namespace MP3CutAd.Core {
                 fileList.Add(wavFile);
 
                 log.EndTimer("wav");
-                notify(log.EstimateProgress());
+                notify((int)log.GetTimeUsed().TotalSeconds, (int)log.EstimateTime().TotalSeconds);
                 log.StartTimer("fft");
 
                 /// 
@@ -72,7 +72,7 @@ namespace MP3CutAd.Core {
                 }
 
                 log.EndTimer("fft");
-                notify(log.EstimateProgress());
+                notify((int)log.GetTimeUsed().TotalSeconds, (int)log.EstimateTime().TotalSeconds);
                 log.StartTimer("hash");
 
                 /// 
@@ -99,7 +99,7 @@ namespace MP3CutAd.Core {
                 hashs.Add(hash);
 
                 log.EndTimer("hash");
-                notify(log.EstimateProgress());
+                notify((int)log.GetTimeUsed().TotalSeconds, (int)log.EstimateTime().TotalSeconds);
 
                 //log.Log(Console.Out, "\t{0:F1}");
 
@@ -128,7 +128,7 @@ namespace MP3CutAd.Core {
                     ranges[j] = CombineToRanges(ranges[j], ranges_j);
 
                     log.EndTimer("compare");
-                    notify(log.EstimateProgress());
+                    notify((int)log.GetTimeUsed().TotalSeconds, (int)log.EstimateTime().TotalSeconds);
                 }
 
                 CalcRangeTypes(ranges, links);
@@ -172,6 +172,8 @@ namespace MP3CutAd.Core {
         }
 
 
+        //private static void In
+
         private static void CalcRangeTypes(List<List<Range>> ranges, List<Link> links) {
             //把link从时间刻度对应到range上
             List<Link>[] rangeLinks = new List<Link>[ranges.Count]; //储存link的图
@@ -180,15 +182,20 @@ namespace MP3CutAd.Core {
             }
             //
             foreach (var link in links) {
-                //    link.f1 = 
+                int i1 = ranges[link.f1].FindIndex(r => r.InRange(link.p1));
+                int i2 = ranges[link.f2].FindIndex(r => r.InRange(link.p2));
+
             }
             for (int i = 0; i < links.Count; i++) {
                 //    ranges
             }
         }
 
-        public static void Cut(Dictionary<string, Range[]> files, string path, Action<float> notify) {
+        public static void Cut(Dictionary<string, Range[]> files, string path, Action<int, int> notify) {
             // TODO: 在需要的时候调用notify()更新进度，参数是[0, 1]的浮点数
+            //for (int i = 0; i < fileList.Count; i++) {
+            //    CutAndCombine(mp3FileList[i], outFileList[i], fileList[i], ranges[i]);
+            //}
         }
 
         // 输入字典为<文件名，被判断为广告的所有区间>
@@ -208,30 +215,6 @@ namespace MP3CutAd.Core {
         //public int[] GetLengthOfFiles(string[] mp3Files) {
 
         //}
-
-
-
-
-
-
-
-
-
-
-
-        static void Mainxx(string[] args) {
-
-
-            ////5. 提取、拼接 正文剩下部分
-            //for (int i = 0; i < fileList.Count; i++) {
-            //    CutAndCombine(mp3FileList[i], outFileList[i], fileList[i], ranges[i]);
-            //}
-
-
-            //0.1s的精度。22.05khz
-
-        }
-
 
 
         private static List<Range> CombineToRanges(List<Range> range, List<Range> add) {
@@ -455,3 +438,4 @@ namespace MP3CutAd.Core {
     }
 
 }
+
