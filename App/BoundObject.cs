@@ -96,8 +96,8 @@ namespace MP3CutAd.App {
             var task = new Task(() => {
                 var files = JsonConvert.DeserializeObject<string[]>(json);
 
-                var notify = new Action<float>(p => {
-                    progress.ExecuteAsync(p);
+                var notify = new Action<int, int>((used, left) => {
+                    progress.ExecuteAsync(used, left);
                 });
 
                 var result = CutAD.DetectAD(files, notify);
@@ -150,8 +150,8 @@ namespace MP3CutAd.App {
                         .ToArray()
                 );
 
-                var notify = new Action<float>(p => {
-                    progress.ExecuteAsync(p);
+                var notify = new Action<int, int>((used, left) => {
+                    progress.ExecuteAsync(used, left);
                 });
 
                 CutAD.Cut(args, outputDirectory, notify);

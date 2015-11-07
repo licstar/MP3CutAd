@@ -57,6 +57,11 @@ body {
   }
   .progress {
     width: 80%;
+
+    .time {
+      text-align: center;
+      font-size: 14px;
+    }
   }
 }
 </style>
@@ -103,7 +108,10 @@ body {
   <div id="loading" v-show="loading" class="v-box">
     <i class="fa fa-spinner spinner"></i>
     <div>玩命计算中</div>
-    <div class="progress"><progress-bar :progress="loadingProgress"></progress-bar></div>
+    <div class="progress">
+      <progress-bar :progress="loadingProgress"></progress-bar>
+      <div class="time">预计剩余时间：{{timeToGo}}</div>
+    </div>
   </div>
 </template>
 
@@ -118,7 +126,9 @@ module.exports = {
       selectedFile: null,
       selectedAd: null,
       loading: false,
-      loadingProgress: 0
+      loadingProgress: 0,
+      timeUsed: 0,
+      timeLeft: 0
     }
   },
   methods: {
@@ -157,6 +167,8 @@ module.exports = {
     detectAd() {
       this.selectAd(null, null)
       this.loading = true
+      this.timeUsed = 0
+      this.timeLeft = -1
       this.loadingProgress = 0
       bound.detectAD(JSON.stringify(this.selectedFiles.map(f => f.fullname)),
         (err, result) => {
@@ -179,11 +191,17 @@ module.exports = {
           })
           this.groupCount = groups.length
         },
-        progress => this.loadingProgress = progress
+        (used, left) => {
+          this.timeUsed = used
+          this.timeLeft = left
+          this.loadingProgress = used / (used + left)
+        }
       )
     },
 
     cut() {
+      this.timeUsed = 0
+      this.timeLeft = -1
       this.loadingProgress = 0
       bound.selectDirectory((err, path) => {
         path = JSON.parse(path)
@@ -194,7 +212,11 @@ module.exports = {
               alert(JSON.stringify(['cut', err, result, path], null, '  '))
               this.loading = false
             },
-            progress => this.loadingProgress = progress
+            (used, left) => {
+              this.timeUsed = used
+              this.timeLeft = left
+              this.loadingProgress = used / (used + left)
+            }
           )
         }
       })
@@ -202,6 +224,12 @@ module.exports = {
 
     showDevTools() {
       bound.showDevTools()
+    }
+  },
+  computed: {
+    timeToGo() {
+      if (this.timeLeft < 0 || this.timeLeft > 10000) return '尚不明朗'
+      return _.formatDuration(this.timeLeft * 1000, false)
     }
   },
   components: {
