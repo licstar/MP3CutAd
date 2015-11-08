@@ -52,8 +52,11 @@ namespace MP3CutAd.App {
         /// </summary>
         /// <param name="filter">文件过滤器：例 *.mp3</param>
         /// <param name="callback">回调，返回该目录内所有符合过滤规则的文件（不递归）</param>
-        public void OpenDirectory(string filter, IJavascriptCallback callback) {
+        public void OpenDirectory(string initialPath, string filter, IJavascriptCallback callback) {
             var dialog = new FolderBrowserDialog();
+            dialog.SelectedPath = initialPath;
+            dialog.ShowNewFolderButton = false;
+
             var result = form.Invoke<DialogResult>(dialog.ShowDialog);
 
             var fileNames = new string[0];
@@ -67,8 +70,10 @@ namespace MP3CutAd.App {
             callback.ExecuteJsonAsync(null, fileNames);
         }
 
-        public void SelectDirectory(IJavascriptCallback callback) {
+        public void SelectDirectory(string initialPath, IJavascriptCallback callback) {
             var dialog = new FolderBrowserDialog();
+            dialog.SelectedPath = initialPath;
+
             var result = form.Invoke<DialogResult>(dialog.ShowDialog);
 
             var dir = "";
@@ -85,11 +90,12 @@ namespace MP3CutAd.App {
         /// <param name="title">标题</param>
         /// <param name="filter">过滤器：例 音频文件(*.mp3)|*.mp3</param>
         /// <param name="callback">回调，返回选中的所有文件</param>
-        public void OpenFile(string title, string filter, IJavascriptCallback callback) {
+        public void OpenFile(string initialPath, string title, string filter, IJavascriptCallback callback) {
             var dialog = new OpenFileDialog();
             dialog.Multiselect = true;
             dialog.Title = title;
             dialog.Filter = filter;
+            dialog.InitialDirectory = initialPath;
 
             var result = form.Invoke<DialogResult>(dialog.ShowDialog);
 
@@ -118,6 +124,7 @@ namespace MP3CutAd.App {
                         length = length * 100,
                         ads = ranges.Select(r => new {
                             type = r.type,
+                            count = r.count,
                             start = r.begin * 100,
                             end = r.end * 100,
                         }).ToArray()
@@ -138,7 +145,7 @@ namespace MP3CutAd.App {
                         directory = "",
                         basename = "",
                         extname = "",
-                        length = "",
+                        length = 0,
                         ads = new[] {
                             new {
                                 ignored = false,
@@ -154,7 +161,7 @@ namespace MP3CutAd.App {
                 var args = files.ToDictionary(
                     file => file.fullname,
                     file => new CutAD.CutPara(
-                         int.Parse(file.length) / 100,
+                         file.length / 100,
                          file.ads
                             .Where(ad => !ad.ignored)
                             .Select(ad => new Range(ad.start / 100, ad.end / 100))
@@ -213,6 +220,10 @@ namespace MP3CutAd.App {
                 complete.ExecuteAsync();
             });
             task.Start();
+        }
+
+        public void GoToDirectory(string path) {
+            Process.Start(path);
         }
     }
 }

@@ -35,11 +35,14 @@
     >.segment {
       position: absolute;
       height: 100%;
+      align-items: center;
+      justify-content: center;
       z-index: 20;
       opacity: @o-xl;
       cursor: pointer;
+
       &.selected, &.active {
-        opacity: 1.0;
+        opacity: 1.0 !important;
       }
       &.selected, &:hover {
         .inner-shadow(2px, lighten(@h-color, 20%));
@@ -49,6 +52,10 @@
         //background-color: @o-d-color !important;
         opacity: @o-xxxl;
       }
+
+      >.ignored {
+        font-size: 24px;
+      }
     }
   }
 }
@@ -57,14 +64,15 @@
 <template>
   <div class="track-viewer">
     <div class="track" v-el:track>
-      <div class="segment"
+      <div class="segment h-box"
         v-if="file.ads.length > 0"
-        v-for="ad in file.ads"
+        v-for="ad in filteredAds"
         :class="{ active: ad.type === activeType, ignored: ad.ignored, selected: ad === selectedAd }"
         :style="ad | segmentStyle file typeCount"
         @mouseover="mouseover(ad)"
         @mouseout="mouseout(ad)"
         @click="select(ad)">
+          <i class="ignored fa fa-times" v-show="ad.ignored"></i>
       </div>
     </div>
 
@@ -101,10 +109,22 @@ Vue.filter('segmentStyle', function(ad, file, typeCount) {
 })
 
 module.exports = {
-  props: ['file', 'type-count', 'selected-ad'],
+  props: ['file', 'type-count', 'selected-ad', 'filter'],
   data: () => {
     return {
       activeType: null
+    }
+  },
+  computed: {
+    filteredAds() {
+      if (!this.file || !this.file.ads || this.file.ads.length === 0) return []
+      var rule = ad => {
+        var ok = true
+        if (this.filter && this.filter.minLength > 0) ok = ok && (ad.end - ad.start) >= this.filter.minLength * 1000
+        if (this.filter && this.filter.minCount > 0) ok = ok && ad.count >= this.filter.minCount
+        return ok
+      }
+      return this.file.ads.filter(rule)
     }
   },
   methods: {

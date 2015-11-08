@@ -47,6 +47,7 @@
         :file="file"
         :type-count="typeCount"
         :selected-ad="selectedAd"
+        :filter="filter"
         @ad-mouseover="adMouseover"
         @ad-mouseout="adMouseout"></track-viewer>
     </li>
@@ -60,7 +61,7 @@ Vue.transition('file-list-expand', {
 })
 
 module.exports = {
-  props: ['files', 'type-count', 'selected-ad'],
+  props: ['files', 'type-count', 'selected-ad', 'filter'],
   data() {
     return {
       expand: true

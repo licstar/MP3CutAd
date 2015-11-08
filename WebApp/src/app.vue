@@ -22,6 +22,11 @@ body {
   width: 100%;
   flex: 1;
 }
+#footer {
+  width: 100%;
+  box-shadow: 0 0 10px #000;
+  z-index: 500;
+}
 
 #sidebar {
   width: 120px;
@@ -106,15 +111,19 @@ body {
         <file-list
           :files="selectedFiles"
           :selected-ad.sync="selectedAd"
+          :filter="$refs.filter"
           @remove="removeFile"
           @select-ad="selectAd"
           :type-count="typeCount"></file-list>
       </div>
     </div>
+    <div id="footer">
+      <filter-control v-ref:filter></filter-control>
+    </div>
   </div>
 
   <div id="loading" v-show="loading" class="v-box">
-    <i class="fa fa-spinner spinner"></i>
+    <i class="fa fa-spinner spin"></i>
     <div>玩命计算中</div>
     <div class="progress">
       <progress-bar :progress="loadingProgress"></progress-bar>
@@ -125,6 +134,7 @@ body {
 
 <script>
 var _ = require('./utils')
+var config = require('./config')
 require('./components/fade-transition.vue')
 
 module.exports = {
@@ -139,6 +149,30 @@ module.exports = {
       timeLeft: -1
     }
   },
+  computed: {
+    loadingProgress() {
+      if (this.timeLeft < 0) return 0
+      return this.timeUsed / (this.timeUsed + this.timeLeft)
+    },
+    timeToGo() {
+      if (this.timeLeft < 0 || this.timeLeft > 10000) return '尚不明朗'
+      return _.formatDuration(this.timeLeft * 1000, false)
+    },
+    defaultPath: {
+      get() {
+        try {
+          return localStorage.getItem(config.lsDefaultPath)
+        } catch(ex) {
+          return ''
+        }
+      },
+      set(val) {
+        try {
+          localStorage.setItem(config.lsDefaultPath, val)
+        } catch(ex) {}
+      }
+    }
+  },
   methods: {
     addFile(path) {
       if (!this.selectedFiles.some(f => f.fullname === path)) {
@@ -148,18 +182,18 @@ module.exports = {
         }
         _.extend(item, _.resolveFileName(path))
 
-        item.length = _.rand(123456)
         this.selectedFiles.push(item)
+        this.defaultPath = item.directory
       }
     },
     openFile() {
-      bound.openFile('添加文件', '音频文件(*.mp3)|*.mp3', (err, result) => {
+      bound.openFile(this.defaultPath, '添加文件', '音频文件(*.mp3)|*.mp3', (err, result) => {
         result = JSON.parse(result)
         result.forEach(this.addFile)
       })
     },
     openDirectory() {
-      bound.openDirectory('*.mp3', (err, result) => {
+      bound.openDirectory(this.defaultPath, '*.mp3', (err, result) => {
         result = JSON.parse(result)
         result.forEach(this.addFile)
       })
@@ -203,8 +237,7 @@ module.exports = {
             })
             file.ads = ads
           })
-          this.typeCount = Math.max.apply(Math, types)
-          console.log(types, this.typeCount)
+          this.typeCount = Math.max.apply(Math, types) + 1
         },
         (used, left) => {
           this.timeUsed = used
@@ -217,14 +250,14 @@ module.exports = {
     cut() {
       this.timeUsed = 0
       this.timeLeft = -1
-      bound.selectDirectory((err, path) => {
+      bound.selectDirectory(this.defaultPath, (err, path) => {
         path = JSON.parse(path)
         if (path) {
           this.loading = true
           bound.cut(JSON.stringify(this.selectedFiles), path,
-            (err, result) => {
-              alert(JSON.stringify(['cut', err, result, path], null, '  '))
+            () => {
               this.loading = false
+              bound.goToDirectory(path)
             },
             (used, left) => {
               this.timeUsed = used
@@ -239,19 +272,10 @@ module.exports = {
       bound.showDevTools()
     }
   },
-  computed: {
-    loadingProgress() {
-      if (this.timeLeft < 0) return 0
-      return this.timeUsed / (this.timeUsed + this.timeLeft)
-    },
-    timeToGo() {
-      if (this.timeLeft < 0 || this.timeLeft > 10000) return '尚不明朗'
-      return _.formatDuration(this.timeLeft * 1000, false)
-    }
-  },
   components: {
     FileList: require('./components/file-list.vue'),
     ControlPanel: require('./components/control-panel.vue'),
+    FilterControl: require('./components/filter-control.vue'),
     ProgressBar: require('./components/progress-bar.vue')
   }
 }
