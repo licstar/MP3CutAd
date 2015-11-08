@@ -1,11 +1,11 @@
 exports.get = function(key) {
   try {
-    return localStorage.getItem(key)
+    return localStorage.getItem(key) || ''
   } catch (ex) {
     return ''
   }
 }
-exports.set = function(key, value) {
+exports.set = function(key, val) {
   try {
     localStorage.setItem(key, val)
   } catch (ex) {}

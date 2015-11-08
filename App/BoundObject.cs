@@ -178,7 +178,11 @@ namespace MP3CutAd.App {
 
                 CutAD.Cut(args, outputDirectory, notify);
 
-                callback.ExecuteJsonAsync(null, true);
+                var timeSaved = args.Aggregate(0, (acc, pair) => {
+                    return acc + pair.Value.range.Aggregate(0, (acc2, r) => acc2 + (r.end - r.begin) / 10);
+                });
+
+                callback.ExecuteJsonAsync(null, timeSaved);
             });
             task.Start();
         }

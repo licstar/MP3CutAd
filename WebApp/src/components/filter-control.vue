@@ -109,7 +109,7 @@ module.exports = {
     },
     decMinCount() {
       this.minCount--
-      if (this.minCount < 1) this.minCount = 1
+      if (this.minCount < 2) this.minCount = 2
     }
   }
 }

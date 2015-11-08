@@ -102,10 +102,10 @@ body {
             <i class="fa fa-trash-o"></i>
             <span>清空列表</span>
           </button>
-          <button class="pure-button pure-button-warning" @click="showDevTools">
+          <!-- <button class="pure-button pure-button-warning" @click="showDevTools">
             <i class="fa fa-cog"></i>
             <span>DevTools</span>
-          </button>
+          </button> -->
       </div>
       <div id="main" class="v-box">
         <file-list
@@ -160,6 +160,7 @@ module.exports = {
       return _.formatDuration(this.timeLeft * 1000, false)
     },
     defaultPath: {
+      cache: false,
       get() {
         return localStore.get(config.lsDefaultPath)
       },
@@ -168,6 +169,7 @@ module.exports = {
       }
     },
     defaultExportPath: {
+      cache: false,
       get() {
         return localStore.get(config.lsDefaultExportPath)
       },
@@ -253,14 +255,17 @@ module.exports = {
     cut() {
       this.timeUsed = 0
       this.timeLeft = -1
-      bound.selectDirectory(this.defaultExportPath || this.defaultPath, (err, path) => {
+      var path = this.defaultExportPath || this.defaultPath
+      console.log(path)
+      bound.selectDirectory(path, (err, path) => {
         path = JSON.parse(path)
         if (path) {
           this.defaultExportPath = path
           this.loading = true
           bound.cut(JSON.stringify(this.selectedFiles), this.$refs.filter.minLength, this.$refs.filter.minCount, path,
-            () => {
+            (err, timeSaved) => {
               this.loading = false
+              alert(`屌屌屌，总共干掉了${timeSaved}秒！`)
               bound.goToDirectory(path)
             },
             (used, left) => {
