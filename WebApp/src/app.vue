@@ -258,11 +258,15 @@ module.exports = {
     cut() {
       this.timeUsed = 0
       this.timeLeft = -1
-      var path = this.defaultExportPath || this.defaultPath
-      console.log(path)
-      bound.selectDirectory(path, (err, path) => {
+      bound.selectDirectory(this.defaultExportPath || this.defaultPath, (err, path) => {
         path = JSON.parse(path)
         if (path) {
+          if (path === this.defaultPath) {
+            if (!confirm('和原文件在同一个目录会覆盖原文件的，你qio定吗！？')){
+              return
+            }
+          }
+
           this.defaultExportPath = path
           this.loading = true
           bound.cut(JSON.stringify(this.selectedFiles), this.$refs.filter.minLength, this.$refs.filter.minCount, path,
