@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 namespace MP3CutAd.Core {
     public partial class CutAD {
 
-        const string tmpdirName = "mp3cut";
+        const string tmpdirName = "mp3cutad";
+        const bool saveTmpFile = false; //会不会输出临时文件。输出的话，第二次计算会快；不输出当然就省空间了
 
         /// <summary>
         /// 检测一系列MP3文件包含的广告（重复出现的部分）
@@ -67,7 +68,8 @@ namespace MP3CutAd.Core {
                 /// 
                 if (!File.Exists(fftFile)) {
                     var a = MyFFT.ProcessWavArr(wavFile);
-                    WriteArrayToFile(a, fftFile);
+                    if (saveTmpFile)
+                        WriteArrayToFile(a, fftFile);
                     ffts.Add(a);
                     File.Delete(wavFile); //生成fft之后就可以删除wav了
                 } else {
@@ -85,11 +87,17 @@ namespace MP3CutAd.Core {
                 List<int> hash = new List<int>();
                 if (!File.Exists(hashFile)) {
                     var a = ffts.Last();
-                    using (StreamWriter sw = new StreamWriter(hashFile)) {
-                        for (int i = 0; i + size < a.GetLength(0); i++) {
-                            int h = LSH.hash(a, i);
-                            sw.WriteLine(h);
-                            hash.Add(h);
+
+                    for (int i = 0; i + size < a.GetLength(0); i++) {
+                        int h = LSH.hash(a, i);
+                        hash.Add(h);
+                    }
+
+                    if (saveTmpFile) {
+                        using (StreamWriter sw = new StreamWriter(hashFile)) {
+                            foreach (var h in hash) {
+                                sw.WriteLine(h);
+                            }
                         }
                     }
                 } else {
@@ -210,17 +218,22 @@ namespace MP3CutAd.Core {
         private static void CutAndCombine(string mp3, string output, string wav, List<Range> range) {
 
             string listFile = wav + ".list";
-
+            var fileList = new List<string>();
             using (StreamWriter sw = new StreamWriter(listFile)) {
                 for (int i = 0; i < range.Count; i++) {
                     var r = range[i];
                     var file = wav + i + ".mp3";
                     FFMpeg.Split(mp3, file, r.begin / 10.0, r.end / 10.0);
                     sw.WriteLine("file '{0}'", file);
+                    fileList.Add(file);
                 }
             }
             FFMpeg.Concat(listFile, output);
 
+            foreach(var f in fileList) {
+                File.Delete(f);
+            }
+            File.Delete(listFile);
         }
 
         //输入候选，输出时间区间
