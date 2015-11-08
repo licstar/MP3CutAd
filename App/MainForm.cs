@@ -25,6 +25,8 @@ namespace MP3CutAd.App {
         public MainForm() {
             InitializeComponent();
 
+            this.Icon = Properties.Resources.AppIcon;
+
             //WindowState = FormWindowState.Maximized;
 
             Browser = new ChromiumWebBrowser("about:blank") {
