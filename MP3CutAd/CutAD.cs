@@ -192,7 +192,7 @@ namespace MP3CutAd.Core {
 
             DateTime start = DateTime.Now;
             int calced = 0;
-            foreach (var file in files) {
+            Parallel.ForEach(files, file => {
                 var f = new FileInfo(file.Key);
 
                 Console.Write("{0}", f.Name);
@@ -204,7 +204,7 @@ namespace MP3CutAd.Core {
                 var used = (DateTime.Now - start).TotalSeconds;
                 var left = used / calced * (files.Count - calced);
                 notify((int)used, (int)left);
-            }
+            });
         }
 
         private static void CutAndCombine(string mp3, string output, string wav, List<Range> range) {
