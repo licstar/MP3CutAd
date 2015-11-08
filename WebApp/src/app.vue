@@ -102,10 +102,10 @@ body {
             <i class="fa fa-trash-o"></i>
             <span>清空列表</span>
           </button>
-          <!-- <button class="pure-button pure-button-warning" @click="showDevTools">
+          <button class="pure-button pure-button-warning" @click="showDevTools" v-if="dev">
             <i class="fa fa-cog"></i>
             <span>DevTools</span>
-          </button> -->
+          </button>
       </div>
       <div id="main" class="v-box">
         <file-list
@@ -151,6 +151,9 @@ module.exports = {
     }
   },
   computed: {
+    dev() {
+      return !(process.env.NODE_ENV === 'production')
+    },
     loadingProgress() {
       if (this.timeLeft < 0) return 0
       return this.timeUsed / (this.timeUsed + this.timeLeft)

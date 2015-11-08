@@ -77,7 +77,7 @@
     </div>
 
     <span class="time">
-      {{file.length | musicTime true}}
+      {{file.length | musicTime false}}
     </span>
 
     <i class="remove fa fa-times" @click="removeFile"></i>
