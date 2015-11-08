@@ -135,6 +135,7 @@ body {
 <script>
 var _ = require('./utils')
 var config = require('./config')
+var localStore = require('./local-store')
 require('./components/fade-transition.vue')
 
 module.exports = {
@@ -160,16 +161,18 @@ module.exports = {
     },
     defaultPath: {
       get() {
-        try {
-          return localStorage.getItem(config.lsDefaultPath)
-        } catch(ex) {
-          return ''
-        }
+        return localStore.get(config.lsDefaultPath)
       },
       set(val) {
-        try {
-          localStorage.setItem(config.lsDefaultPath, val)
-        } catch(ex) {}
+        localStore.set(config.lsDefaultPath, val)
+      }
+    },
+    defaultExportPath: {
+      get() {
+        return localStore.get(config.lsDefaultExportPath)
+      },
+      set(val) {
+        localStore.set(config.lsDefaultExportPath, val)
       }
     }
   },
@@ -250,11 +253,12 @@ module.exports = {
     cut() {
       this.timeUsed = 0
       this.timeLeft = -1
-      bound.selectDirectory(this.defaultPath, (err, path) => {
+      bound.selectDirectory(this.defaultExportPath || this.defaultPath, (err, path) => {
         path = JSON.parse(path)
         if (path) {
+          this.defaultExportPath = path
           this.loading = true
-          bound.cut(JSON.stringify(this.selectedFiles), path,
+          bound.cut(JSON.stringify(this.selectedFiles), this.$refs.filter.minLength, this.$refs.filter.minCount, path,
             () => {
               this.loading = false
               bound.goToDirectory(path)

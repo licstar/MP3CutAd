@@ -54,7 +54,7 @@
       }
 
       >.ignored {
-        font-size: 24px;
+        font-size: 12px;
       }
     }
   }
@@ -121,7 +121,7 @@ module.exports = {
       var rule = ad => {
         var ok = true
         if (this.filter && this.filter.minLength > 0) ok = ok && (ad.end - ad.start) >= this.filter.minLength * 1000
-        if (this.filter && this.filter.minCount > 0) ok = ok && ad.count >= this.filter.minCount
+        if (this.filter && this.filter.minCount > 1) ok = ok && ad.count >= this.filter.minCount
         return ok
       }
       return this.file.ads.filter(rule)

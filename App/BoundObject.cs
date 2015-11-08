@@ -136,7 +136,7 @@ namespace MP3CutAd.App {
             task.Start();
         }
 
-        public void Cut(string json, string outputDirectory, IJavascriptCallback callback, IJavascriptCallback progress) {
+        public void Cut(string json, int minLength, int minCount, string outputDirectory, IJavascriptCallback callback, IJavascriptCallback progress) {
             var task = new Task(() => {
                 var example = new[] {
                     new {
@@ -150,6 +150,7 @@ namespace MP3CutAd.App {
                             new {
                                 ignored = false,
                                 type = 0,
+                                count = 1,
                                 start = 0,
                                 end = 0,
                             }
@@ -164,6 +165,8 @@ namespace MP3CutAd.App {
                          file.length / 100,
                          file.ads
                             .Where(ad => !ad.ignored)
+                            .Where(ad => minLength > 0 && (ad.end - ad.start) >= minLength * 1000)
+                            .Where(ad => minCount > 1 && ad.count >= minCount)
                             .Select(ad => new Range(ad.start / 100, ad.end / 100))
                             .ToList()
                         )
