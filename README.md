@@ -2,7 +2,7 @@
 自动去掉MP3有声读物里面反复出现的片头、片尾、广告。
 
 ## 使用方法
-下载安装（http://pan.baidu.com/s/1pJ3VmVx），或者：
+下载安装（http://pan.baidu.com/s/1pJ3VmVx ），或者：
 
 1. 下载代码，用VS打开，会自动安装一些依赖。
 2. 下载ffmpeg。复制里面的ffmpeg.exe和ffplay.exe到本项目的ffmpeg目录下。
